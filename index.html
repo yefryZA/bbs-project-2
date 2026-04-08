@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BBS SYSTEM - PT. BERKAH BAJA STEEL</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Poppins:wght@400;600&family=Orbitron:wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+       <style>
+    /* =========================================
+       PANEL KENDALI WARNA (Ganti di Sini Aja)
+       ========================================= */
+    :root {
+        --bg-utama: radial-gradient(circle, #239a35 0%, #34681c 100%); /* Warna Dasar Layar */
+        --warna-otw-1: #1e360c; /* Warna Kotak OTW (Kiri) */
+        --warna-otw-2: #1f6d18; /* Warna Kotak OTW (Kanan) */
+        --aksen-emas: #FFD700;  /* Warna Gold */
+        --aksen-perak: #C0C0C0; /* Warna Silver */
+        --aksen-merah: #FF4D4D; /* Warna Merah */
+        --aksen-hijau: #1e2a27; /* Warna Green Button */
+        --warna-teks: #00c4fa;  /* Warna Tulisan Umum */
+        --glass: rgba(255, 255, 255, 0.1); /* Efek Kaca Transparan */
+        --bg-header: linear-gradient(to bottom, #000, #112240); /* Warna Header */
+    }
+
+    /* =========================================
+       PENGATURAN TAMPILAN (ASLI MILIK BAPAK)
+       ========================================= */
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; text-transform: uppercase; }
+    
+    body { 
+        font-family: 'Poppins', sans-serif; 
+        background: var(--bg-utama); 
+        color: var(--warna-teks); 
+        margin: 0; 
+        min-height: 100vh; 
+        text-transform: none; 
+    }
+
+    .header-bbs { 
+        padding: 20px 10px; 
+        background: var(--bg-header); 
+        border-bottom: 3px solid var(--aksen-perak); 
+        text-align: center; 
+    }
+
+    .header-bbs h1 { 
+        font-family: 'Cinzel', serif; 
+        font-size: 16px; 
+        color: var(--aksen-perak); 
+        margin: 0; 
+        letter-spacing: 1px; 
+    }
+
+    .header-bbs p { 
+        font-family: 'Poppins'; 
+        font-size: 9px; 
+        color: var(--aksen-emas); 
+        margin: 5px 0 0 0; 
+    }
+
+    .container { 
+        padding: 15px; display: none; flex-direction: column; gap: 12px; max-width: 500px; margin: 0 auto; 
+    }
+
+    .card { 
+        background: var(--glass); border: 1px solid var(--glass); border-radius: 15px; padding: 15px; backdrop-filter: blur(10px); position: relative; 
+    }
+
+    .otw-container { 
+        background: linear-gradient(45deg, var(--warna-otw-1), var(--warna-otw-2)); 
+        padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 10px; border: 1px solid var(--aksen-perak);
+    }
+
+    .otw-val { 
+        font-family: 'Orbitron'; font-size: 32px; font-weight: bold; color: var(--warna-teks); display: block; 
+    }
+
+    b, h1, h2, .lbl, .val, input { text-transform: uppercase; }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat-box { background: rgba(0,0,0,0.4); padding: 12px; border-radius: 10px; text-align: center; border: 1px solid var(--glass); }
+    
+    /* Sekarang label dan value pakai variabel di atas */
+    .lbl { font-size: 9px; color: var(--aksen-emas); font-weight: bold; display: block; margin-bottom: 5px; }
+    .val { font-family: 'Orbitron'; font-size: 16px; color: var(--warna-teks); }
+
+    input, select { width: 100%; padding: 12px; background: rgba(0,0,0,0.5); border: 1px solid #233554; color: #fff; border-radius: 8px; font-family: 'Orbitron'; margin-top: 5px; margin-bottom: 15px; }
+    .btn { width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; font-family: 'Poppins'; cursor: pointer; }
+    
+    /* Tombol pakai variabel kendali warna */
+    .btn-green { background: var(--aksen-hijau); color: #0A192F; }
+    .btn-gold { background: var(--aksen-emas); color: #0A192F; }
+
+    #margin-area { display: none; border: 1px dashed var(--aksen-emas); padding: 15px; border-radius: 10px; margin-top: 15px; background: rgba(0,0,0,0.3); }
+    .lock-btn { position: absolute; right: 15px; top: 15px; cursor: pointer; font-size: 20px; }
+
+    .truck-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; }
+    #loader { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
+
+    .m-table { width: 100%; font-size: 10px; border-collapse: collapse; margin: 10px 0; }
+    .m-table td { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    
+    .ops-btn { background: var(--aksen-merah); color: white; border: none; padding: 10px; border-radius: 8px; font-size: 10px; cursor: pointer; width: 100%; margin-bottom: 10px; font-weight:bold; }
+    
+    /* Scanner sekarang otomatis ikut warna emas di atas */
+    #reader { width: 100%; border-radius: 10px; overflow: hidden; margin-bottom: 15px; border: 2px solid var(--aksen-emas) !important; }
+    #qr-canvas { display: none; background: white; padding: 10px; border-radius: 5px; margin: 10px auto; }
+</style>
+   
+</head>
+<body>
+
+    <div id="loader">
+        <div style="border: 5px solid #f3f3f3; border-top: 5px solid var(--gold); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite;"></div>
+        <div id="load-txt" style="color:var(--gold); font-family:Orbitron; margin-top:15px; font-size:12px;">MENGIRIM DATA...</div>
+    </div>
+
+    <div class="header-bbs" style="display: flex; align-items: center; justify-content: space-between; padding: 15px 15px; background: linear-gradient(to bottom, #000, #112240); border-bottom: 3px solid var(--aksen-perak);">
+        
+        <div style="flex: 1; display: flex; align-items: center;">
+            <div style="width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--aksen-emas); background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 0 10px var(--aksen-emas);">
+                <img src="https://raw.githubusercontent.com/yefryZA/PT.BBS/main/logo.png" alt="LOGO" style="width: 90%; height: auto;">
+            </div>
+        </div>
+
+        <div style="flex: 2; text-align: center;">
+            <h1 style="font-family: 'Cinzel', serif; font-size: 13px; color: var(--aksen-perak); margin: 0; letter-spacing: 1px;">PT. BERKAH BAJA STEEL</h1>
+            <p style="font-family: 'Poppins'; font-size: 8px; color: var(--aksen-emas); margin: 3px 0 0 0;">GENERAL CONTRACTOR & LOGISTIK</p>
+        </div>
+
+        <div style="flex: 1; text-align: right; font-family: 'Orbitron', sans-serif;">
+            <div id="jam-digital" style="font-size: 12px; color: var(--aksen-emas); font-weight: bold;">00:00:00</div>
+            <div id="tgl-digital" style="font-size: 7px; color: var(--aksen-perak);">01 JAN 2026</div>
+        </div>
+    </div>
+
+    <div id="view-dashboard" class="container">
+        <div class="otw-container">
+            <span class="lbl" style="color:#fff">UNIT DALAM PERJALANAN (OTW)</span>
+            <span id="d-count-otw" class="otw-val">0</span>
+        </div>
+
+        <div class="card">
+            <span class="lock-btn" onclick="toggleMargin()">🔐</span>
+            <span class="lbl">TOTAL VOLUME (M3)</span>
+            <div class="stat-grid">
+                <div class="stat-box"><span class="lbl">TOTAL MUAT</span><span id="d-total-muat" class="val">0</span></div>
+                <div class="stat-box"><span class="lbl">TOTAL BONGKAR</span><span id="d-total-bongkar" class="val">0</span></div>
+                <div class="stat-box" style="grid-column: span 2; border: 1.5px solid var(--glass);">
+                    <span class="lbl">TOTAL LOSS / GAIN</span>
+                    <span id="d-total-loss" class="val" style="font-size: 24px;">0</span>
+                </div>
+            </div>
+
+            <div id="margin-area">
+                <button class="ops-btn" onclick="openOps()">⚙️ TOTAL OPERASIONAL : <span id="d-ops-total">RP 0</span></button>
+                
+                <table class="m-table">
+                    <tr><td>MARGIN 5K (Team BBS)</td><td align="right"><b id="res-m5">RP 0</b><br><small id="res-m5-p">/ORG: RP 0</small></td></tr>
+                    <tr><td>MARGIN 7K (BBS & NAS - OPS)</td><td align="right"><b id="res-m7">RP 0</b><br><small id="res-m7-p">/ORG: RP 0</small></td></tr>
+                    <tr><td>MARGIN 1K (BBS & NAS)</td><td align="right"><b id="res-m1">RP 0</b><br><small id="res-m1-p">/ORG: RP 0</small></td></tr>
+                </table>
+
+                <div class="stat-box" style="grid-column: span 2; border: 1.5px dashed var(--green); background: rgba(100, 255, 218, 0.05);">
+                    <span class="lbl" style="color:var(--green); font-size: 10px;">MARGIN BERSIH TEAM BBS</span>
+                    <div id="d-hak-total" class="val" style="color:var(--green); font-size:22px;">RP 0</div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
+                    <button class="btn" style="background:var(--silver); font-size:10px; padding:10px;" onclick="generatePDF('NAS')">📄 REKAP NAS (PDF)</button>
+                    <button class="btn" style="background:var(--green); font-size:10px; padding:10px; color:#000;" onclick="generatePDF('BBS')">🔐 RINCIAN BBS (PDF)</button>
+                </div>
+                <button class="btn" style="margin-top:10px; font-size:10px; height:auto; padding:8px;" onclick="openAdmin()">⚙️ HARGA & RESET</button>
+            </div> 
+        </div>
+
+        <div class="card">
+            <span class="lbl">DAFTAR AKTIVITAS KENDARAAN</span>
+            <div id="log-list"></div>
+        </div>
+    </div>
+
+    <div id="modal-ops" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:2000; padding:20px;">
+        <div class="card" style="max-width:400px; margin:auto;">
+            <h3 style="color:var(--gold)">BIAYA OPERASIONAL</h3>
+            <div id="ops-list" style="max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+            <input type="text" id="ops-ket" placeholder="KETERANGAN">
+            <input type="number" id="ops-nom" placeholder="NOMINAL (RP)">
+            <button class="btn btn-green" onclick="addOps()">TAMBAH DATA</button>
+            <button class="btn" style="background:none; color:#8892B0" onclick="closeOps()">TUTUP</button>
+        </div>
+    </div>
+
+   <div id="view-cilegon" class="container">
+        <div class="card">
+            <h2 style="color:var(--green)">INPUT MUAT</h2>
+            
+            <label class="lbl">DATA KENDARAAN & DRIVER</label>
+            <input type="text" id="m-plat" placeholder="PLAT NOMOR (Cth: A 1234 BB)">
+            <input type="text" id="m-sopir" placeholder="NAMA SOPIR">
+            
+            <label class="lbl">DETAIL MUATAN</label>
+<input type="text" id="m-barang" placeholder="NAMA BARANG (Cth: PASIR RANGKAS)">
+
+<div style="display:flex; gap:5px; margin-bottom:10px;">
+    <input type="number" id="m-p" placeholder="P (m)" step="0.01" style="flex:1; padding:12px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:white;">
+    <input type="number" id="m-l" placeholder="L (m)" step="0.01" style="flex:1; padding:12px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:white;">
+    <input type="number" id="m-t" placeholder="T (m)" step="0.01" style="flex:1; padding:12px; border-radius:8px; border:1px solid #444; background:#1a1a1a; color:white;">
+</div>
+
+<input type="number" id="m-vol" placeholder="TOTAL VOLUME (M3)" step="0.01" readonly style="background:#222; color:var(--gold); font-weight:bold; border:1px dashed var(--gold);">
+            
+            <label class="lbl">FOTO MUATAN (RATA/MUNJUNG)</label>
+            <input type="file" capture="camera" id="m-foto">
+            
+            <label class="lbl">FOTO KTP</label>
+            <input type="file" capture="camera" id="m-ktp">
+            
+            <button class="btn btn-green" onclick="prosesMuat()">SIMPAN & CETAK SURAT JALAN</button>
+            
+            <div id="qr-canvas"></div>
+        </div>
+    </div>
+
+    <div id="view-jakarta" class="container">
+        <div class="card">
+            <h2 style="color:var(--gold)">INPUT BONGKAR (SCAN QR)</h2>
+            <div id="reader"></div> <div id="form-bongkar" style="display:none;">
+                <div class="stat-box" style="margin-bottom:15px; border-color:var(--green)">
+                    <span class="lbl">UNIT TERDETEKSI:</span>
+                    <div id="res-scan-plat" class="val" style="color:var(--green)">-</div>
+                </div>
+                <input type="hidden" id="b-id-mobil">
+                <input type="number" id="b-vol" placeholder="VOL BONGKAR" step="0.01">
+                <label class="lbl">FOTO BONGKAR</label><input type="file" capture="camera" id="b-foto">
+                <button class="btn btn-gold" onclick="prosesBongkar()">KONFIRMASI</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-admin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:1000; padding:20px;">
+        <div class="card" style="max-width:400px; margin:auto;">
+            <h3 style="color:var(--gold)">ADMIN PANEL</h3>
+            <label class="lbl">HARGA BELI /M3</label><input type="number" id="cfg-beli">
+            <label class="lbl">HARGA JUAL /M3</label><input type="number" id="cfg-jual">
+            <button class="btn btn-green" onclick="saveSettings()">SIMPAN HARGA</button>
+            <button class="btn" style="background:var(--red); color:#fff; margin-top:20px;" onclick="resetBBS()">RESET TOTAL DATA</button>
+            <button class="btn" style="background:none; color:#8892B0" onclick="closeAdmin()">TUTUP</button>
+        </div>
+    </div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, set, push, onValue, get, update, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    const firebaseConfig = { apiKey: "AIzaSyAfeLTKRQ66tjZjAt7tg6KcrWhtmv0y3fo", databaseURL: "https://berkah-baja-steel-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "berkah-baja-steel" };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const dbKey = "BBS-PROJECT-2";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbx-eRkVaYgck8k7MSgk0NKuAwvXhRcJ6SHH9hOBz-CrmiNjMjweamSQodg2dBxl2A0gzw/exec";
+
+    const mode = new URLSearchParams(window.location.search).get('mode');
+    if(mode === 'cilegon') document.getElementById('view-cilegon').style.display = 'flex';
+    else if(mode === 'jakarta') {
+        document.getElementById('view-jakarta').style.display = 'flex';
+        initScanner();
+    }
+    else document.getElementById('view-dashboard').style.display = 'flex';
+
+    // --- FUNGSI DURASI ---
+    function hitungDurasi(jamM, jamB) {
+        if(!jamM || !jamB) return "-";
+        const [h1, m1] = jamM.split(':').map(Number);
+        const [h2, m2] = jamB.split(':').map(Number);
+        let totalMenit = (h2 * 60 + m2) - (h1 * 60 + m1);
+        if (totalMenit < 0) totalMenit += 1440; 
+        const jam = Math.floor(totalMenit / 60);
+        const mnt = totalMenit % 60;
+        return `${jam} jam ${mnt} menit`;
+    }
+
+    async function compressAndGetBase64(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 800;
+                    if (width > height) {
+                        if (width > max_size) { height *= max_size / width; width = max_size; }
+                    } else {
+                        if (height > max_size) { width *= max_size / height; height = max_size; }
+                    }
+                    canvas.width = width; canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL("image/jpeg", 0.7).split(',')[1]);
+                };
+            };
+        });
+    }
+
+    async function uploadFoto(file, fileName) {
+        if(!file) return "";
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('load-txt').innerText = "MENYUSUTKAN FOTO...";
+        const base64Sut = await compressAndGetBase64(file);
+        document.getElementById('load-txt').innerText = "MENGIRIM DATA (" + fileName.split('_')[0] + ")...";
+        try {
+            const res = await fetch(GAS_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ base64: base64Sut, type: "image/jpeg", name: fileName }) 
+            });
+            const json = await res.json();
+            return json.url || "";
+        } catch (err) {
+            console.error("Gagal Upload:", err);
+            return "";
+        } finally {
+            document.getElementById('loader').style.display = 'none';
+        }
+    }
+
+    async function printSuratJalan(data) {
+        const tgl = new Date().toLocaleString('id-ID', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+        const jam = new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+        const printArea = document.createElement('div');
+        printArea.style = "width: 380px; padding: 20px; background: white; color: black; font-family: monospace; position: absolute; left: -9999px; top: 0;";
+        printArea.innerHTML = `
+    <div style="text-align: center; font-weight: bold; font-size: 18px;">PT. BERKAH BAJA STEEL</div>
+    <div style="text-align: center; font-size: 12px;">GENERAL CONTRACTOR & LOGISTIK</div>
+    <div style="text-align: center;">--------------------------------</div>
+    <div style="font-size: 14px; line-height: 1.5;">
+        <div style="font-family: monospace; width: 100%; font-size: 12px;">
+            
+            <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 12px; table-layout: fixed;">
+                <tr><td style="width: 75px;">TGL/JAM</td><td style="width: 15px;">:</td><td>${tgl} ‖ ${jam}</td></tr>
+                <tr><td>PLAT NO</td><td>:</td><td>${data.plat}</td></tr>
+                <tr><td>SOPIR</td><td>:</td><td>${data.sopir || "-"}</td></tr>
+                <tr><td>BARANG</td><td>:</td><td>${data.barang || "-"}</td></tr>
+                
+                <tr>
+                    <td colspan="3" style="padding: 5px 0;">
+                        -----------------------------------------------<br>
+                        panjang : ${data.p||0} ‖ lebar : ${data.l||0} ‖ tinggi : ${data.t||0} (m)<br>
+                        -----------------------------------------------
+                    </td>
+                </tr>
+
+                <tr><td>TOTAL</td><td>:</td><td><b>${data.volM || 0} M3</b></td></tr>
+            </table>
+
+            <div style="text-align: center; margin-top: 5px;">ID SURAT: ${data.id}</div>
+            <div id="qrcode-box" style="display: flex; justify-content: center; padding: 10px;"></div>
+            -----------------------------------------------<br>
+
+            <div style="margin-left: 50%; text-align: center; font-size: 11px;">
+                Mengetahui,<br><br><br>
+                <b>SOFYAN</b><br>
+                Supervisor
+            </div>
+            -----------------------------------------------<br>
+
+            <div style="text-align: center; font-size: 11px; margin-top: 15px;">⚓ NIAT BAIK ‖ KERJA BAIK ‖ REZEKI BAIK ⚓</div>
+            <div style="text-align: center; font-size: 10px; margin-top:10px;">Hati-hati pak sopir, KELUARGA menunggu ANDA dirumah.</div>
+        </div>
+    </div>
+`;
+        document.body.appendChild(printArea);
+        new QRCode(document.getElementById("qrcode-box"), {
+            text: "https://berkahbajasteel.web.app/verifikasi?id=" + data.id,
+            width: 150, height: 150
+        });
+        setTimeout(() => {
+            html2canvas(printArea).then(canvas => {
+                const imageData = canvas.toDataURL("image/png");
+                const link = document.createElement('a');
+                link.download = `STRUK_${data.plat}_${data.id.substring(0,5)}.png`;
+                link.href = imageData;
+                link.click();
+                document.body.removeChild(printArea);
+                document.getElementById('load-txt').innerHTML = "<b style='color:green'>STRUK TERDOWNLOAD!</b><br>Buka Galeri & Cetak Gambar.";
+                document.getElementById('loader').style.display = 'flex';
+                setTimeout(() => { location.reload(); }, 3000);
+            });
+        }, 1000);
+    }
+
+    window.prosesMuat = async () => {
+        const p = document.getElementById('m-plat').value.toUpperCase();
+        const s = document.getElementById('m-sopir').value.toUpperCase();
+        const b = document.getElementById('m-barang').value.toUpperCase();
+        const v = document.getElementById('m-vol').value;
+        const fS = document.getElementById('m-foto').files[0];
+        const fK = document.getElementById('m-ktp').files[0];
+        const p_dim = document.getElementById('m-p').value;
+        const l_dim = document.getElementById('m-l').value;
+        const t_dim = document.getElementById('m-t').value;
+        
+        if(!p || !s || !b || !v || !fS || !fK || !p_dim || !l_dim || !t_dim) return alert("LENGKAPI SEMUA DATA!");
+        
+        document.getElementById('load-txt').innerText = "MENYIMPAN DATA...";
+        document.getElementById('loader').style.display = 'flex';
+
+        const uS = await uploadFoto(fS, `MUAT_${p}.jpg`);
+        const uK = await uploadFoto(fK, `KTP_${p}.jpg`);
+        
+        const newRef = push(ref(db, `bbs_logs/${dbKey}`));
+        const logData = { 
+            plat: p, sopir: s, barang: b, 
+            p: Number(p_dim), l: Number(l_dim), t: Number(t_dim),
+            volM: Number(v), volB: 0, status: 'OTW', 
+            fotoM: uS, fotoKTP: uK, 
+            tgl: new Date().toLocaleDateString('id-ID'),
+            jamM: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit', hour12: false}) 
+        };
+        await set(newRef, logData);
+        printSuratJalan({ ...logData, id: newRef.key });
+    }
+    
+    async function initScanner() {
+        const html5QrCode = new Html5Qrcode("reader");
+        await html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (decodedText) => {
+            html5QrCode.stop().then(() => onScanSuccess(decodedText));
+        });
+    }
+
+    async function onScanSuccess(decodedText) {
+    let idSurat = decodedText.includes("id=") ? decodedText.split("id=")[1] : decodedText;
+    document.getElementById('loader').style.display = 'flex';
+
+    try {
+        const snap = await get(ref(db, `bbs_logs/${dbKey}/${idSurat}`));
+        
+        if(snap.exists()) {
+            const data = snap.val();
+
+            // --- PROTEKSI ANTI DOUBLE SCAN (Gembok Cimi) ---
+            if (data.status === 'DONE') {
+                alert("⚠️ DITOLAK: Mobil " + data.plat + " SUDAH BONGKAR sebelumnya!");
+                location.reload();
+                return;
+            } 
+            
+            if (data.status === 'ARCHIVED') {
+                alert("❌ BAHAYA: Barcode ini sudah kedaluwarsa & sudah masuk laporan (ARCHIVED)!");
+                location.reload();
+                return;
+            }
+
+            // Kalau statusnya OTW, baru boleh lanjut
+            document.getElementById('b-id-mobil').value = idSurat;
+            document.getElementById('res-scan-plat').innerText = data.plat;
+            document.getElementById('form-bongkar').style.display = 'block';
+            document.getElementById('reader').style.display = 'none';
+            
+        } else {
+            alert("🆔 ID TIDAK DITEMUKAN! Pastikan ini Barcode BBS.");
+            location.reload(); 
+        }
+    } catch (err) {
+        alert("Koneksi Error!");
+    } finally {
+        document.getElementById('loader').style.display = 'none';
+    }
+}
+    window.prosesBongkar = async () => {
+        const id = document.getElementById('b-id-mobil').value;
+        const v = document.getElementById('b-vol').value;
+        const f = document.getElementById('b-foto').files[0];
+        if(!id || !v || !f) return alert("LENGKAPI DATA!");
+        const u = await uploadFoto(f, `BONGKAR_${id}.jpg`);
+        await update(ref(db, `bbs_logs/${dbKey}/${id}`), { 
+            volB: Number(v), 
+            status: 'DONE', 
+            fotoB: u,
+            jamB: new Date().toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit', hour12: false}) 
+        });
+        location.reload();
+    }
+
+    let rawData = [];
+    let totalOps = 0;
+
+    onValue(ref(db, `bbs_logs/${dbKey}`), (snap) => {
+        const data = snap.val();
+        let tm = 0, tb = 0, otw = 0; rawData = [];
+        const list = document.getElementById('log-list');
+        list.innerHTML = "";
+        if(data) {
+            Object.keys(data).forEach(k => {
+                const i = data[k];
+                // --- DASHBOARD GLOWING: SEMBUNYIKAN ARCHIVED ---
+                if(i.status === 'ARCHIVED') return;
+
+                tm += i.volM; tb += i.volB; rawData.push(i);
+                if(i.status === 'OTW') otw++;
+                list.innerHTML += `<div class="truck-item">
+                    <div><b>${i.plat}</b><br><small><a href="${i.fotoM}" target="_blank" style="color:var(--green)">FOTO MUAT</a> | <a href="${i.fotoB||'#'}" target="_blank" style="color:var(--gold)">FOTO BONGKAR</a></small></div>
+                    <span class="badge" style="background:${i.status==='OTW'?'#FF9800':'#4CAF50'}; padding:3px 8px; border-radius:4px;">${i.status}</span>
+                </div>`;
+            });
+        }
+        document.getElementById('d-count-otw').innerText = otw;
+        document.getElementById('d-total-muat').innerText = tm.toFixed(2);
+        document.getElementById('d-total-bongkar').innerText = tb.toFixed(2);
+        const lossVal = tb - tm;
+        const lossEl = document.getElementById('d-total-loss');
+        lossEl.innerText = (lossVal > 0 ? "+" : "") + lossVal.toFixed(2);
+        lossEl.style.color = lossVal < 0 ? "var(--red)" : (lossVal > 0 ? "var(--green)" : "#fff");
+        hitungUang(tb);
+    });
+
+    async function hitungUang(tb) {
+        const snapOps = await get(ref(db, `bbs_operasional/${dbKey}`));
+        totalOps = 0;
+        const oList = document.getElementById('ops-list'); oList.innerHTML = "";
+        if(snapOps.val()) {
+            Object.keys(snapOps.val()).forEach(k => {
+                const o = snapOps.val()[k]; totalOps += Number(o.nom);
+                oList.innerHTML += `<div style="display:flex; justify-content:space-between; font-size:11px; margin-bottom:5px;"><span>- ${o.ket}</span><span>RP ${o.nom.toLocaleString()} <b onclick="delOps('${k}')" style="color:red; cursor:pointer">X</b></span></div>`;
+            });
+        }
+        document.getElementById('d-ops-total').innerText = "RP " + totalOps.toLocaleString();
+        const h5 = (tb * 5000) / 3;
+        const h7 = ((tb * 7000) - totalOps) / 4;
+        const h1 = (tb * 1000) / 4;
+        document.getElementById('res-m5').innerText = "RP " + (tb*5000).toLocaleString();
+        document.getElementById('res-m5-p').innerText = "/ORG: RP " + Math.floor(h5).toLocaleString();
+        document.getElementById('res-m7').innerText = "RP " + (tb*7000).toLocaleString();
+        document.getElementById('res-m7-p').innerText = "/ORG: RP " + Math.floor(h7).toLocaleString();
+        document.getElementById('res-m1').innerText = "RP " + (tb*1000).toLocaleString();
+        document.getElementById('res-m1-p').innerText = "/ORG: RP " + Math.floor(h1).toLocaleString();
+        document.getElementById('d-hak-total').innerText = "RP " + Math.floor(h5 + h7 + h1).toLocaleString();
+    }
+
+    window.openOps = () => document.getElementById('modal-ops').style.display = 'block';
+    window.closeOps = () => document.getElementById('modal-ops').style.display = 'none';
+    window.addOps = async () => {
+        const k = document.getElementById('ops-ket').value;
+        const n = document.getElementById('ops-nom').value;
+        if(k && n) { await push(ref(db, `bbs_operasional/${dbKey}`), { ket: k, nom: Number(n) }); location.reload(); }
+    };
+    window.delOps = async (id) => { if(confirm("HAPUS?")) { await remove(ref(db, `bbs_operasional/${dbKey}/${id}`)); location.reload(); } };
+
+    // --- GENERATE PDF BATCH 20 ---
+    window.generatePDF = async (tipe) => {
+        const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0, 20);
+        if (dataSiap.length < 20) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const s = await get(ref(db, `bbs_settings/${dbKey}`));
+        const cfg = s.val() || { beli: 0, jual: 0 };
+        
+        const totalM = dataSiap.reduce((sum, i) => sum + (Number(i.volM) || 0), 0);
+        const totalB = dataSiap.reduce((sum, i) => sum + (Number(i.volB) || 0), 0);
+        const selisihTotal = totalB - totalM;
+
+        doc.setFontSize(16); doc.text("PT. BERKAH BAJA STEEL", 105, 15, { align: "center" });
+
+        if(tipe === 'NAS') {
+            doc.setFontSize(10); doc.text("REKAP PENGIRIMAN BB-NAS (BATCH 20)", 105, 22, { align: "center" });
+            const body = dataSiap.map((i, index) => {
+                const rowLoss = i.volB - i.volM;
+                return [index + 1, i.tgl, hitungDurasi(i.jamM, i.jamB), i.plat, i.volM.toFixed(2), i.volB.toFixed(2), (rowLoss > 0 ? "+" : "") + rowLoss.toFixed(2)];
+            });
+
+            doc.autoTable({ 
+                head: [['NO', 'TGL BONGKAR', 'DURASI', 'PLAT', 'MUAT', 'BONGKAR', '+/-']], 
+                body, startY: 30, theme: 'grid',
+                didDrawCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 6) {
+                        const val = data.cell.raw;
+                        if (val.toString().includes('-')) { doc.setTextColor(255, 0, 0); doc.setFont("helvetica", "bold"); }
+                        else if (val.toString().includes('+')) { doc.setTextColor(0, 128, 0); }
+                    }
+                }
+            });
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setTextColor(0,0,0); doc.setFont("helvetica", "normal");
+            doc.text(`TOTAL MUAT: ${totalM.toFixed(2)} M3`, 14, finalY);
+            doc.text(`TOTAL BONGKAR: ${totalB.toFixed(2)} M3`, 14, finalY + 7);
+            if(selisihTotal < 0) doc.setTextColor(255, 0, 0); else if(selisihTotal > 0) doc.setTextColor(0, 128, 0);
+            doc.setFont("helvetica", "bold");
+            doc.text(`TOTAL SELISIH (LOSS/LEBIH): ${(selisihTotal > 0 ? "+" : "") + selisihTotal.toFixed(2)} M3`, 14, finalY + 14);
+        } else {
+            doc.setFontSize(10); doc.text("RINCIAN INTERNAL MARGIN (BATCH 20)", 105, 22, { align: "center" });
+            const bodyMargin = [
+                ['MARGIN 5K', "RP " + (totalB * 5000).toLocaleString(), "BAGI 3", "RP " + Math.floor((totalB * 5000) / 3).toLocaleString()],
+                ['MARGIN 7K', "RP " + (totalB * 7000).toLocaleString(), "BAGI 4 (-OPS)", "RP " + Math.floor(((totalB * 7000) - totalOps) / 4).toLocaleString()],
+                ['MARGIN 1K', "RP " + (totalB * 1000).toLocaleString(), "BAGI 4", "RP " + Math.floor((totalB * 1000) / 4).toLocaleString()]
+            ];
+            doc.autoTable({ head: [['KATEGORI', 'TOTAL', 'SISTEM', 'HASIL/ORANG']], body: bodyMargin, startY: 30 });
+            const finalYMargin = doc.lastAutoTable.finalY + 10;
+            doc.text(`TOTAL SELISIH BATCH INI: ${selisihTotal.toFixed(2)} M3`, 15, finalYMargin);
+            doc.text("TOTAL OPERASIONAL: RP " + totalOps.toLocaleString(), 15, finalYMargin + 7);
+        }
+
+        doc.setTextColor(0,0,0);
+        const signY = doc.internal.pageSize.height - 30;
+        doc.setFont("helvetica", "bold"); doc.text("YEFRY ZA.", 160, signY, { align: "center" });
+        doc.setFont("helvetica", "normal"); doc.text("MANAGER", 160, signY + 7, { align: "center" });
+        doc.save(`BBS_${tipe}_BATCH.pdf`);
+
+        if (tipe === 'BBS' && confirm("Laporan Margin Berhasil! Bersihkan 20 data ini dari dashboard?")) {
+            const updates = {};
+            const snapshot = await get(ref(db, `bbs_logs/${dbKey}`));
+            const dbData = snapshot.val();
+            dataSiap.forEach(item => {
+                const keyFirebase = Object.keys(dbData).find(k => dbData[k].plat === item.plat && dbData[k].tgl === item.tgl && dbData[k].volM === item.volM);
+                if (keyFirebase) updates[`bbs_logs/${dbKey}/${keyFirebase}/status`] = 'ARCHIVED';
+            });
+            await update(ref(db), updates);
+            alert("DASHBOARD BERSIH!"); location.reload();
+        }
+    };
+
+    window.toggleMargin = () => { if(prompt("PASS?") === "bbs-nas") { let a = document.getElementById('margin-area'); a.style.display = a.style.display==='block'?'none':'block'; } };
+    window.openAdmin = () => document.getElementById('modal-admin').style.display = 'block';
+    window.closeAdmin = () => document.getElementById('modal-admin').style.display = 'none';
+    window.saveSettings = async () => {
+        await set(ref(db, `bbs_settings/${dbKey}`), { beli: Number(document.getElementById('cfg-beli').value), jual: Number(document.getElementById('cfg-jual').value) });
+        alert("SIMPAN BERHASIL!"); closeAdmin();
+    };
+    window.resetBBS = async () => { if(confirm("HAPUS SEMUA DATA?")) { await remove(ref(db, `bbs_logs/${dbKey}`)); await remove(ref(db, `bbs_operasional/${dbKey}`)); location.reload(); } };
+
+    document.getElementById('m-plat').addEventListener('input', function (e) {
+        let v = e.target.value.toUpperCase().replace(/\s+/g, '');
+        let r = "";
+        const duaHuruf = ["BE", "BA", "BG", "BH", "BK", "BL", "BM", "BP", "DA", "AB", "AA", "AE", "DE", "DG", "DH", "DK", "DL", "DM", "DN", "DP", "DR", "DS", "DT", "DW", "EA", "EB", "ED", "EE", "EF", "EG", "EH", "EJ", "EK", "EL", "EM", "EN", "EO", "EP", "EQ", "ER", "ES", "ET", "EU", "EV", "EW", "EX", "EY", "EZ", "GA", "GB", "GC", "GD", "GE", "GF", "GG", "GH", "GI", "GJ", "GK", "GL", "GM", "GN", "GO", "GP", "GQ", "GR", "GS", "GT", "GU", "GV", "GW", "GX", "GY", "GZ", "KA", "KB", "KC", "KD", "KE", "KF", "KG", "KH", "KI", "KJ", "KK", "KL", "KM", "KN", "KO", "KP", "KQ", "KR", "KS", "KT", "KU", "KV", "KW", "KX", "KY", "KZ", "PA", "PB", "PC", "PD", "PE", "PF", "PG", "PH", "PI", "PJ", "PK", "PL", "PM", "PN", "PO", "PP", "PQ", "PR", "PS", "PT", "PU", "PV", "PW", "PX", "PY", "PZ"];
+        if (v.length > 0) {
+            let prefix2 = v.substring(0, 2);
+            let splitIdx = duaHuruf.includes(prefix2) ? 2 : 1;
+            r += v.substring(0, splitIdx);
+            let sisa = v.substring(splitIdx);
+            let angkaMatch = sisa.match(/\d+/);
+            if (angkaMatch) {
+                let angka = angkaMatch[0].substring(0, 4);
+                r += " " + angka;
+                let seri = sisa.substring(angka.length).replace(/[^A-Z]/g, '');
+                if (seri.length > 0) r += " " + seri.substring(0, 3);
+            } else if (sisa.length > 0) r += sisa.substring(0, 1).replace(/[^0-9]/g, '');
+        }
+        e.target.value = r;
+    });
+
+    ['m-p', 'm-l', 'm-t'].forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.addEventListener('input', () => {
+            const p = parseFloat(document.getElementById('m-p').value) || 0;
+            const l = parseFloat(document.getElementById('m-l').value) || 0;
+            const t = parseFloat(document.getElementById('m-t').value) || 0;
+            document.getElementById('m-vol').value = (p * l * t).toFixed(2);
+        });
+    }); 
+
+    function jalankanJam() {
+    const skr = new Date();
+    document.getElementById('jam-digital').innerHTML = skr.toLocaleTimeString('en-GB');
+    const opsi = { day: '2-digit', month: 'short', year: 'numeric' };
+    document.getElementById('tgl-digital').innerHTML = skr.toLocaleDateString('id-ID', opsi).toUpperCase();
+}
+setInterval(jalankanJam, 1000);
+jalankanJam();
+
+</script>
+<style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
+</body>
+</html>
