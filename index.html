@@ -16,20 +16,20 @@
        PANEL KENDALI WARNA (Ganti di Sini Aja)
        ========================================= */
     :root {
-        --bg-utama: radial-gradient(circle, #239a35 0%, #34681c 100%); /* Warna Dasar Layar */
+        --bg-utama: radial-gradient(circle, #1a6325 0%, #34681c 100%); /* Warna Dasar Layar */
         --warna-otw-1: #1e360c; /* Warna Kotak OTW (Kiri) */
         --warna-otw-2: #1f6d18; /* Warna Kotak OTW (Kanan) */
         --aksen-emas: #FFD700;  /* Warna Gold */
         --aksen-perak: #C0C0C0; /* Warna Silver */
         --aksen-merah: #FF4D4D; /* Warna Merah */
         --aksen-hijau: #1e2a27; /* Warna Green Button */
-        --warna-teks: #00c4fa;  /* Warna Tulisan Umum */
-        --glass: rgba(255, 255, 255, 0.1); /* Efek Kaca Transparan */
-        --bg-header: linear-gradient(to bottom, #000, #112240); /* Warna Header */
+        --warna-teks: #b1fcd3;  /* Warna Tulisan Umum */
+        --glass: rgba(72, 97, 76, 0.1); /* Efek Kaca Transparan */
+        --bg-header: linear-gradient(to bottom, #6c5757, #112240); /* Warna Header */
     }
 
     /* =========================================
-       PENGATURAN TAMPILAN (ASLI MILIK BAPAK)
+       PENGATURAN TAMPILAN
        ========================================= */
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; text-transform: uppercase; }
     
@@ -94,7 +94,7 @@
     .btn { width: 100%; padding: 16px; border-radius: 8px; border: none; font-weight: bold; font-family: 'Poppins'; cursor: pointer; }
     
     /* Tombol pakai variabel kendali warna */
-    .btn-green { background: var(--aksen-hijau); color: #0A192F; }
+    .btn-green { background: var(--aksen-hijau); color: #58d0e5; }
     .btn-gold { background: var(--aksen-emas); color: #0A192F; }
 
     #margin-area { display: none; border: 1px dashed var(--aksen-emas); padding: 15px; border-radius: 10px; margin-top: 15px; background: rgba(0,0,0,0.3); }
@@ -173,8 +173,8 @@
                 </div>
 
                 <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:15px;">
-                    <button class="btn" style="background:var(--silver); font-size:10px; padding:10px;" onclick="generatePDF('NAS')">📄 REKAP NAS (PDF)</button>
-                    <button class="btn" style="background:var(--green); font-size:10px; padding:10px; color:#000;" onclick="generatePDF('BBS')">🔐 RINCIAN BBS (PDF)</button>
+                    <button class="btn" style="background:var(--silver); font-size:10px; padding:10px; color:#eaff00;" onclick="generatePDF('NAS')">📄 REKAP NAS (PDF)</button>
+                    <button class="btn" style="background:var(--green); font-size:10px; padding:10px; color:#eaff00;" onclick="generatePDF('BBS')">🔐 RINCIAN BBS (PDF)</button>
                 </div>
                 <button class="btn" style="margin-top:10px; font-size:10px; height:auto; padding:8px;" onclick="openAdmin()">⚙️ HARGA & RESET</button>
             </div> 
