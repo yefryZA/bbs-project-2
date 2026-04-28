@@ -162,21 +162,25 @@
         </div>
     </div>
 
-    <div id="view-jakarta" class="container">
-        <div class="card">
-            <h2 style="color:var(--gold)">INPUT BONGKAR (SCAN QR)</h2>
-            <div id="reader"></div> <div id="form-bongkar" style="display:none;">
-                <div class="stat-box" style="margin-bottom:15px; border-color:var(--green)">
-                    <span class="lbl">UNIT TERDETEKSI:</span>
-                    <div id="res-scan-plat" class="val" style="color:var(--green)">-</div>
-                </div>
-                <input type="hidden" id="b-id-mobil">
-                <input type="number" id="b-vol" placeholder="VOL BONGKAR" step="0.01">
-                <label class="lbl">FOTO BONGKAR</label><input type="file" capture="camera" id="b-foto">
-                <button class="btn btn-gold" onclick="prosesBongkar()">KONFIRMASI</button>
+   <div id="view-jakarta" class="container-aktif">
+    <div class="card">
+        <h2 style="color:var(--gold)">INPUT BONGKAR (SCAN QR)</h2>
+        
+        <div id="reader"></div> 
+
+        <div id="form-bongkar" style="display:none;">
+            <div class="stat-box" style="margin-bottom:15px; border-color:var(--green)">
+                <span class="lbl">UNIT TERDETEKSI:</span>
+                <div id="res-scan-plat" class="val" style="color:var(--green)">-</div>
             </div>
+            <input type="hidden" id="b-id-mobil">
+            <input type="number" id="b-vol" placeholder="VOL BONGKAR" step="0.01">
+            <label class="lbl">FOTO BONGKAR</label>
+            <input type="file" capture="camera" id="b-foto">
+            <button class="btn btn-gold" onclick="prosesBongkar()">KONFIRMASI</button>
         </div>
     </div>
+</div>
 
     <div id="modal-admin" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:1000; padding:20px;">
         <div class="card" style="max-width:400px; margin:auto;">
@@ -856,6 +860,14 @@ function jalankanJam() {
 }
 setInterval(jalankanJam, 1000);
 jalankanJam();
+
+    // Perintah untuk langsung menyalakan kamera saat file dibuka
+document.addEventListener('DOMContentLoaded', () => {
+    // Kasih delay dikit biar browser siap
+    setTimeout(() => {
+        initScanner();
+    }, 1000);
+});
     
 </script>
 <style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
