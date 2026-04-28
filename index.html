@@ -554,11 +554,14 @@
     };
     window.delOps = async (id) => { if(confirm("HAPUS?")) { await remove(ref(db, `bbs_operasional/${dbKey}/${id}`)); location.reload(); } };
 
+//=============================================================================================================================================
+//=============================================================================================================================================
     // --- GENERATE PDF BATCH 20 ---
     window.generatePDF = async (tipe) => {
         const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0);
         if (dataSiap.length < 0) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
-
+//=============================================================================================================================================
+//=============================================================================================================================================
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const s = await get(ref(db, `bbs_settings/${dbKey}`));
