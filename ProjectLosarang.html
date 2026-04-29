@@ -853,8 +853,7 @@ const signY = doc.internal.pageSize.height - 30;
             });
             await update(ref(db), updates);
             alert("DASHBOARD BERSIH!"); location.reload();
-        }
-    };
+        };
 
     window.toggleMargin = () => { if(prompt("PASS?") === "bbs-nas") { let a = document.getElementById('margin-area'); a.style.display = a.style.display==='block'?'none':'block'; } };
     window.openAdmin = () => document.getElementById('modal-admin').style.display = 'block';
