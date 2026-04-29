@@ -767,7 +767,7 @@ async function hitungUang(tb, jumlahMobil = 0) {
 
     // 3. Margin 1K (Potong Ops dulu baru bagi 3, Tanpa Potong Kas)
     const bruto1 = (totalB * 1000) - totalOps;
-    const hasil1 = Math.floor(Math.max(0, bruto1) / 3);
+    const hasil1 = Math.floor(Math.max(0, bruto1));
 //=====================================================================================================================
 //=====================================================================================================================
     // 4. Margin Unit (Bagi 3, Tanpa Potong Kas)
@@ -779,7 +779,7 @@ async function hitungUang(tb, jumlahMobil = 0) {
     const bodyMargin = [
         ['MARGIN 11K', "RP " + bruto11.toLocaleString(), "BAGI 3 (-10% KAS)", "RP " + hasil11.toLocaleString()],
         ['MARGIN 3K', "RP " + bruto3.toLocaleString(), "FULL 1 ORG", "RP " + hasil3.toLocaleString()],
-        ['MARGIN 1K', "RP " + Math.max(0, bruto1).toLocaleString(), "BAGI 3 (-OPS)", "RP " + hasil1.toLocaleString()],
+        ['MARGIN 1K', "RP " + Math.max(0, bruto1).toLocaleString(), "(-OPS)", "RP " + hasil1.toLocaleString()],
         ['MARGIN UNIT', "RP " + totalMarginUnit.toLocaleString(), "BAGI 3", "RP " + hasilUnit.toLocaleString()]
     ];
 
