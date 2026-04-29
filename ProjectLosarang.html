@@ -99,12 +99,31 @@
             <div id="margin-area">
                 <button class="ops-btn" onclick="openOps()">⚙️ TOTAL OPERASIONAL : <span id="d-ops-total">RP 0</span></button>
                 
-                <table class="m-table">
-                    <tr><td>MARGIN 5K (Team BBS)</td><td align="right"><b id="res-m5">RP 0</b><br><small id="res-m5-p">/ORG: RP 0</small></td></tr>
-                    <tr><td>MARGIN 7K (BBS & NAS - OPS)</td><td align="right"><b id="res-m7">RP 0</b><br><small id="res-m7-p">/ORG: RP 0</small></td></tr>
-                    <tr><td>MARGIN 1K (BBS & NAS)</td><td align="right"><b id="res-m1">RP 0</b><br><small id="res-m1-p">/ORG: RP 0</small></td></tr>
-                </table>
+               <table class="m-table">
+    <tr>
+        <td>MARGIN 11K (TEAM BBS)</td>
+        <td align="right">
+            <b id="res-m5">RP 0</b><br>
+            <small id="res-m5-p">/ORG: RP 0 (-10% KAS)</small>
+        </td>
+    </tr>
 
+    <tr>
+        <td>MARGIN 3K (OutFee RANDI)</td>
+        <td align="right">
+            <b id="res-m7">RP 0</b><br>
+            <small id="res-m7-p">FULL: RP 0</small>
+        </td>
+    </tr>
+
+    <tr>
+        <td>MARGIN 1K (OPS)</td>
+        <td align="right">
+            <b id="res-m1">RP 0</b><br>
+            <small id="res-m1-p">FULL (-OPS): RP 0</small>
+        </td>
+    </tr>
+</table>
                 <div class="stat-box" style="grid-column: span 2; border: 1.5px dashed var(--green); background: rgba(100, 255, 218, 0.05);">
                     <span class="lbl" style="color:var(--green); font-size: 10px;">MARGIN BERSIH TEAM BBS</span>
                     <div id="d-hak-total" class="val" style="color:var(--green); font-size:22px;">RP 0</div>
@@ -289,7 +308,7 @@
         printArea.style = "width: 380px; padding: 20px; background: white; color: black; font-family: monospace; position: absolute; left: -9999px; top: 0;";
         printArea.innerHTML = `
     <div style="text-align: center; font-weight: bold; font-size: 18px;">PT. BERKAH BAJA STEEL</div>
-    <div style="text-align: center; font-size: 12px;">PROJECT TOLL JAPEK II</div>
+    <div style="text-align: center; font-size: 12px;">PROJECT KAWASAN INDUSTRI LOSARANG</div>
     <div style="text-align: center;">--------------------------------</div>
     <div style="font-size: 14px; line-height: 1.5;">
         <div style="font-family: monospace; width: 100%; font-size: 12px;">
@@ -539,73 +558,68 @@ async function hitungUang(tb, jumlahMobil = 0) {
 //=====================================================================================================================
     // --- LOGIKA HITUNGAN UPGRADE ---
     const potKas = 0.10; // Potongan Kas 10%
-    const marginPerMobil = 300000; // Didapat dari (5.000.000 - 4.700.000)
+    const marginPerMobil = 100000; // Didapat dari (5.000.000 - 4.700.000)
     const totalMarginUnit = marginPerMobil * jumlahMobil;
 
-    // Perhitungan tiap bagian (Sesuai rumus baru)
-    const h5 = (tb * 5000) / 3; // Margin 5k bagi 3 murni
-    const h7 = (((tb * 7000) - totalOps) * (1 - potKas)) / 4; // Margin 7k potong OPS & KAS 10% bagi 4
-    const h1 = ((tb * 1000) * (1 - potKas)) / 4; // Margin 1k potong KAS 10% bagi 4
-    const hUnit = (totalMarginUnit * (1 - potKas)) / 4; // Margin Unit potong KAS 10% bagi 4
+    const potKas = 0.10; // 10% khusus untuk yang 11.000
+    const marginPerMobil = 300000; 
+    const totalMarginUnit = marginPerMobil * jumlahMobil;
+
+    // 1. Yang 11.000 POTONG KAS 10% lalu bagi 3
+    const bruto11 = tb * 11000;
+    const h11 = (bruto11 * (1 - potKas)) / 3;
+
+    // 2. Yang 3.000 untuk 1 ORANG (Tanpa Potong Kas)
+    const h3 = tb * 3000;
+
+    // 3. Yang 1.000 dikurangi operasional lalu bagi 3 (Tanpa Potong Kas)
+    const bruto1 = (tb * 1000) - totalOps;
+    const h1 = Math.max(0, bruto1);
+
+    // 4. Total margin unit bagi 3 (Tanpa Potong Kas)
+    const hUnit = totalMarginUnit / 3;
+
 //=====================================================================================================================
 //=====================================================================================================================
 
-    // 2. UPDATE TAMPILAN DASHBOARD (Hanya jika ID nya ditemukan)
+    // 2. UPDATE TAMPILAN DASHBOARD
     const elOps = document.getElementById('d-ops-total');
     if(elOps) {
         elOps.innerText = "RP " + totalOps.toLocaleString();
         
-        document.getElementById('res-m5').innerText = "RP " + (tb*5000).toLocaleString();
-        document.getElementById('res-m5-p').innerText = "/ORG: RP " + Math.floor(h5).toLocaleString();
+        // Tampilan Margin 11K (Ada keterangan -10%)
+        document.getElementById('res-m5').innerText = "RP " + bruto11.toLocaleString();
+        document.getElementById('res-m5-p').innerText = "/ORG: RP " + Math.floor(h11).toLocaleString() + " (-10% KAS)";
         
-        document.getElementById('res-m7').innerText = "RP " + Math.max(0, (tb*7000) - totalOps).toLocaleString();
-        document.getElementById('res-m7-p').innerText = "/ORG: RP " + Math.max(0, Math.floor(h7)).toLocaleString() + " (-10%)";
+        // Tampilan Margin 3K (Full 1 orang, tanpa -10%)
+        document.getElementById('res-m7').innerText = "RP " + h3.toLocaleString();
+        document.getElementById('res-m7-p').innerText = "FULL 1 ORG: RP " + Math.floor(h3).toLocaleString();
         
-        document.getElementById('res-m1').innerText = "RP " + (tb*1000).toLocaleString();
-        document.getElementById('res-m1-p').innerText = "/ORG: RP " + Math.floor(h1).toLocaleString() + " (-10%)";
+      // 3. Yang 1.000 dikurangi operasional (FULL untuk 1 Orang)
+    const bruto1 = (tb * 1000) - totalOps;
+    const h1 = Math.max(0, bruto1); // Murni hasil sisa Ops, tidak dibagi 3
+
+    // ... (di bagian update tampilan) ...
+    document.getElementById('res-m1').innerText = "RP " + Math.max(0, bruto1).toLocaleString();
+    document.getElementById('res-m1-p').innerText = "FULL 1 ORG: RP " + Math.floor(h1).toLocaleString();
         
-        // Update Margin Unit (Pastikan Abang punya ID 'res-unit' & 'res-unit-p' di HTML)
+        // Update Margin Unit (Bagi 3, tanpa -10%)
         const elUnit = document.getElementById('res-unit');
         if(elUnit) {
             elUnit.innerText = "RP " + totalMarginUnit.toLocaleString();
-            document.getElementById('res-unit-p').innerText = "/ORG: RP " + Math.floor(hUnit).toLocaleString() + " (-10%)";
+            document.getElementById('res-unit-p').innerText = "/ORG: RP " + Math.floor(hUnit).toLocaleString();
         }
 
         // TOTAL BERSIH YANG DITERIMA PER ORANG
-        document.getElementById('d-hak-total').innerText = "RP " + Math.floor(h5 + h7 + h1 + hUnit).toLocaleString();
+        document.getElementById('d-hak-total').innerText = "RP " + Math.floor(h11 + h3 + h1 + hUnit).toLocaleString();
     }
 }
-
-// --- FUNGSI MODAL & OPS (TIDAK BERUBAH AGAR STABIL) ---
-window.openOps = () => {
-    const m = document.getElementById('modal-ops');
-    if(m) m.style.display = 'block';
-};
-window.closeOps = () => {
-    const m = document.getElementById('modal-ops');
-    if(m) m.style.display = 'none';
-};
-window.addOps = async () => {
-    const k = document.getElementById('ops-ket').value;
-    const n = document.getElementById('ops-nom').value;
-    if(k && n) { 
-        await push(ref(db, `bbs_operasional/${dbKey}`), { ket: k, nom: Number(n) }); 
-        location.reload(); 
-    }
-};
-window.delOps = async (id) => { 
-    if(confirm("HAPUS?")) { 
-        await remove(ref(db, `bbs_operasional/${dbKey}/${id}`)); 
-        location.reload(); 
-    } 
-};
-
 //=====================================================================================================================
 //=====================================================================================================================
     // --- GENERATE PDF BATCH 20 ---
     window.generatePDF = async (tipe) => {
-        const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0);
-        if (dataSiap.length < 0) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
+        const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0, 20);
+        if (dataSiap.length < 20) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
 //=====================================================================================================================
 //=====================================================================================================================
 
@@ -682,11 +696,11 @@ window.delOps = async (id) => {
 //=====================================================================================================================
 //=====================================================================================================================
          
-            const hargaBeliUnit = 117700; // HARGA BELI MATERIAL
+            const hargaBeliUnit = 2200000; // HARGA BELI MATERIAL
             const totalHargaBeli = totalM * hargaBeliUnit;
             
             // --- TAMBAHAN: LOGIKA ONGKOS TRUCK ---
-            const hargaOngkosPerRit = 5000000; // Harga per rit (Rp 5.000.000)
+            const hargaOngkosPerRit = 5500000; // Harga per rit 
             const totalHargaOngkosTruck = hargaOngkosPerRit * dataSiap.length;
 //=====================================================================================================================
 //=====================================================================================================================
@@ -730,38 +744,44 @@ window.delOps = async (id) => {
     doc.setFontSize(10); 
     doc.text("RINCIAN INTERNAL MARGIN (BATCH 20)", 105, 22, { align: "center" });
 
+} else {
+    doc.setFontSize(10); 
+    doc.text("RINCIAN INTERNAL MARGIN (BATCH 20)", 105, 22, { align: "center" });
+
 //=====================================================================================================================
-//=====================================================================================================================    
-    // --- LOGIKA SETTING REVISI (SEMUA POTONG KAS 10%) ---
+//=====================================================================================================================
+    // --- LOGIKA SETTING REVISI (LOGIKA BARU) ---
     const potKas = 0.10; 
-    const marginUnitPerMobil = 300000; // (5.000.000 - 4.700.000)
+    const marginUnitPerMobil = 100000; // Sesuai dashboard (5jt - 4.7jt)
     const totalMarginUnit = marginUnitPerMobil * dataSiap.length;
 
-    // --- PERHITUNGAN BRUTO ---
-    const bruto5k = totalB * 5000;
-    const bruto7k = Math.max(0, (totalB * 7000) - totalOps);
-    const bruto1k = totalB * 1000;
-//=====================================================================================================================
-//=====================================================================================================================
-    // --- HITUNG TOTAL NOMINAL KAS (10% dari semua Bruto) ---
-    const totalKasNominal = (bruto5k + bruto7k + bruto1k + totalMarginUnit) * potKas;
+    // --- PERHITUNGAN TIAP KATEGORI (SESUAI DASHBOARD) ---
+    
+    // 1. Margin 11K (Bruto potong Kas 10% bagi 3)
+    const bruto11 = totalB * 11000;
+    const hasil11 = Math.floor((bruto11 * (1 - potKas)) / 3);
 
-    // --- PERHITUNGAN HASIL PER ORANG ---
-    const hasil5k = Math.floor((bruto5k * (1 - potKas)) / 3);
-    const hasil7k = Math.floor((bruto7k * (1 - potKas)) / 4);
-    const hasil1k = Math.floor((bruto1k * (1 - potKas)) / 4);
-    const hasilUnit = Math.floor((totalMarginUnit * (1 - potKas)) / 4);
+    // 2. Margin 3K (Full 1 Orang, Tanpa Potong Kas)
+    const bruto3 = totalB * 3000;
+    const hasil3 = Math.floor(bruto3);
 
+    // 3. Margin 1K (Potong Ops dulu baru bagi 3, Tanpa Potong Kas)
+    const bruto1 = (totalB * 1000) - totalOps;
+    const hasil1 = Math.floor(Math.max(0, bruto1) / 3);
 //=====================================================================================================================
-//=====================================================================================================================    
+//=====================================================================================================================
+    // 4. Margin Unit (Bagi 3, Tanpa Potong Kas)
+    const hasilUnit = Math.floor(totalMarginUnit / 3);
+
+    // --- TOTAL KAS (HANYA DARI 11K) ---
+    const totalKasNominal = bruto11 * potKas;
+
     const bodyMargin = [
-        ['MARGIN 5K', "RP " + bruto5k.toLocaleString(), "BAGI 3 (-10%)", "RP " + hasil5k.toLocaleString()],
-        ['MARGIN 7K', "RP " + bruto7k.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasil7k.toLocaleString()],
-        ['MARGIN 1K', "RP " + bruto1k.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasil1k.toLocaleString()],
-        ['MARGIN UNIT', "RP " + totalMarginUnit.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasilUnit.toLocaleString()]
+        ['MARGIN 11K', "RP " + bruto11.toLocaleString(), "BAGI 3 (-10% KAS)", "RP " + hasil11.toLocaleString()],
+        ['MARGIN 3K', "RP " + bruto3.toLocaleString(), "FULL 1 ORG", "RP " + hasil3.toLocaleString()],
+        ['MARGIN 1K', "RP " + Math.max(0, bruto1).toLocaleString(), "BAGI 3 (-OPS)", "RP " + hasil1.toLocaleString()],
+        ['MARGIN UNIT', "RP " + totalMarginUnit.toLocaleString(), "BAGI 3", "RP " + hasilUnit.toLocaleString()]
     ];
-//=====================================================================================================================
-//=====================================================================================================================
 
     doc.autoTable({ 
         head: [['KATEGORI', 'TOTAL BRUTO', 'SISTEM', 'HASIL/ORANG']], 
@@ -772,7 +792,9 @@ window.delOps = async (id) => {
     });
 
     const finalYMargin = doc.lastAutoTable.finalY + 10;
-    const totalTerimaBersih = hasil5k + hasil7k + hasil1k + hasilUnit;
+    
+    // TOTAL TERIMA BERSIH (Semua komponen dijumlah)
+    const totalTerimaBersih = hasil11 + hasil3 + hasil1 + hasilUnit;
     
     doc.setFont("helvetica", "bold");
     
@@ -780,8 +802,8 @@ window.delOps = async (id) => {
     doc.text(`TOTAL TERIMA PER ORANG`, 15, finalYMargin);
     doc.text(`: RP ${totalTerimaBersih.toLocaleString()}`, 80, finalYMargin);
     
-    // 2. Baris TOTAL KAS (Pesanan Abang)
-    doc.text(`TOTAL KAS 10% BATCH INI`, 15, finalYMargin + 7);
+    // 2. Baris TOTAL KAS (Hanya dari 11K)
+    doc.text(`TOTAL KAS 10% (DARI 11K)`, 15, finalYMargin + 7);
     doc.text(`: RP ${Math.floor(totalKasNominal).toLocaleString()}`, 80, finalYMargin + 7);
     
     doc.setFont("helvetica", "normal");
