@@ -77,7 +77,8 @@
         <h3 id="modal-title" style="color:var(--gold)">INPUT DATA</h3>
         <input type="text" id="kas-ket" placeholder="Keterangan Transaksi">
         <label style="font-size: 11px; color: var(--slate);">Nominal (Otomatis Titik)</label>
-        <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)">
+        <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
+       style="font-size: 24px; font-weight: bold; color: var(--gold); height: 60px;">
         <input type="hidden" id="kas-tipe">
         <button class="btn bg-green" onclick="simpan()">SIMPAN DATA</button>
         <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
