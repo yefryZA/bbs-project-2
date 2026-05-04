@@ -99,31 +99,12 @@
             <div id="margin-area">
                 <button class="ops-btn" onclick="openOps()">⚙️ TOTAL OPERASIONAL : <span id="d-ops-total">RP 0</span></button>
                 
-               <table class="m-table">
-    <tr>
-        <td>MARGIN 11K (TEAM BBS)</td>
-        <td align="right">
-            <b id="res-m5">RP 0</b><br>
-            <small id="res-m5-p">/ORG: RP 0 (-10% KAS)</small>
-        </td>
-    </tr>
+                <table class="m-table">
+                    <tr><td>Margin 350K (Pasir)</td><td align="right"><b id="res-m5">RP 0</b><br><small id="res-m5-p">/ORG: RP 0</small></td></tr>
+                    <tr><td>Margin 350K (Unit Truck - OPS)</td><td align="right"><b id="res-m7">RP 0</b><br><small id="res-m7-p">/ORG: RP 0</small></td></tr>
+                    <tr><td>Margin 7K (BBS & CBA)</td><td align="right"><b id="res-m1">RP 0</b><br><small id="res-m1-p">/ORG: RP 0</small></td></tr>
+                </table>
 
-    <tr>
-        <td>MARGIN 3K (OutFee RANDI)</td>
-        <td align="right">
-            <b id="res-m7">RP 0</b><br>
-            <small id="res-m7-p">FULL: RP 0</small>
-        </td>
-    </tr>
-
-    <tr>
-        <td>MARGIN 1K (OPS)</td>
-        <td align="right">
-            <b id="res-m1">RP 0</b><br>
-            <small id="res-m1-p">FULL (-OPS): RP 0</small>
-        </td>
-    </tr>
-</table>
                 <div class="stat-box" style="grid-column: span 2; border: 1.5px dashed var(--green); background: rgba(100, 255, 218, 0.05);">
                     <span class="lbl" style="color:var(--green); font-size: 10px;">MARGIN BERSIH TEAM BBS</span>
                     <div id="d-hak-total" class="val" style="color:var(--green); font-size:22px;">RP 0</div>
@@ -211,6 +192,16 @@
             <button class="btn" style="background:none; color:#8892B0" onclick="closeAdmin()">TUTUP</button>
         </div>
     </div>
+
+    <div id="container-foto-asal" style="display:none; margin-top:15px; text-align:center;">
+    <div style="background: var(--light-dark); padding: 10px; border-radius: 12px; border: 1px dashed var(--gold);">
+        <p style="font-size: 11px; color: var(--gold); font-weight: bold; margin-bottom: 8px;">
+            📸 FOTO KONDISI MUAT (DARI ASAL)
+        </p>
+        <img id="img-muat-asal" src="" style="width: 100%; border-radius: 8px; border: 1px solid #333; cursor: pointer;" onclick="window.open(this.src)">
+        <p style="font-size: 9px; color: var(--slate); margin-top: 5px;">*Klik gambar untuk memperbesar</p>
+    </div>
+</div>
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -308,7 +299,7 @@
         printArea.style = "width: 380px; padding: 20px; background: white; color: black; font-family: monospace; position: absolute; left: -9999px; top: 0;";
         printArea.innerHTML = `
     <div style="text-align: center; font-weight: bold; font-size: 18px;">PT. BERKAH BAJA STEEL</div>
-    <div style="text-align: center; font-size: 12px;">PROJECT KAWASAN INDUSTRI LOSARANG-PT. GWB</div>
+    <div style="text-align: center; font-size: 12px;">PROJECT KAWASAN INDUSTRI LOSARANG</div>
     <div style="text-align: center;">--------------------------------</div>
     <div style="font-size: 14px; line-height: 1.5;">
         <div style="font-family: monospace; width: 100%; font-size: 12px;">
@@ -428,9 +419,19 @@
                 return;
             }
 
-            // Kalau statusnya OTW, baru boleh lanjut
+            // --- JIKA LOLOS PROTEKSI, LANJUT TAMPILKAN DATA ---
             document.getElementById('b-id-mobil').value = idSurat;
             document.getElementById('res-scan-plat').innerText = data.plat;
+            
+            // --- FITUR BARU: TAMPILKAN FOTO MUAT DARI ASAL ---
+            if (data.fotoM) { // Pastikan field di Firebase namanya fotoM
+                document.getElementById('img-muat-asal').src = data.fotoM;
+                document.getElementById('container-foto-asal').style.display = 'block';
+            } else {
+                document.getElementById('container-foto-asal').style.display = 'none';
+            }
+            // ------------------------------------------------
+
             document.getElementById('form-bongkar').style.display = 'block';
             document.getElementById('reader').style.display = 'none';
             
@@ -538,6 +539,7 @@ async function hitungUang(tb, jumlahMobil = 0) {
     // 1. Ambil elemen list operasional
     const oList = document.getElementById('ops-list'); 
     
+    // Cek dulu: Kalau oList ada (hanya di Dashboard Admin), baru jalankan loop operasional
     if(oList) {
         oList.innerHTML = "";
         if(snapOps.val()) {
@@ -548,227 +550,318 @@ async function hitungUang(tb, jumlahMobil = 0) {
             });
         }
     } else {
+        // Kalau oList nggak ada (di halaman scanner), kita tetap hitung totalOps dari DB buat PDF
         if(snapOps.val()) {
             Object.values(snapOps.val()).forEach(o => { totalOps += Number(o.nom); });
         }
     }
+//=====================================================================================================================
+//=====================================================================================================================
+    // --- LOGIKA HITUNGAN UPGRADE ---
+    const potKas = 0.10; // Potongan Kas 10%
+    const marginPerMobil = 300000; // Didapat dari (5.000.000 - 4.700.000)
+    const totalMarginUnit = marginPerMobil * jumlahMobil;
 
-    // --- LOGIKA HITUNGAN UPGRADE (FIXED) ---
-    const potKas = 0.10; 
-    const marginUnitPerMobil = 100000; // Sesuai kesepakatan dapur
-    const totalMarginUnit = marginUnitPerMobil * jumlahMobil;
+    // Perhitungan tiap bagian (Sesuai rumus baru)
+    const h5 = (tb * 5000) / 3; // Margin 5k bagi 3 murni
+    const h7 = (((tb * 7000) - totalOps) * (1 - potKas)) / 4; // Margin 7k potong OPS & KAS 10% bagi 4
+    const h1 = ((tb * 1000) * (1 - potKas)) / 4; // Margin 1k potong KAS 10% bagi 4
+    const hUnit = (totalMarginUnit * (1 - potKas)) / 4; // Margin Unit potong KAS 10% bagi 4
+//=====================================================================================================================
+//=====================================================================================================================
 
-    // 1. Yang 11.000 (Potong Kas 10%, bagi 3)
-    const bruto11 = tb * 11000;
-    const h11 = (bruto11 * (1 - potKas)) / 3;
-
-    // 2. Yang 3.000 (FULL 1 Orang)
-    const h3 = tb * 3000;
-
-    // 3. Yang 1.000 (Potong Operasional, FULL 1 Orang)
-    const bruto1 = (tb * 1000) - totalOps;
-    const h1 = Math.max(0, bruto1); 
-
-    // 4. Margin Unit (Bagi 3)
-    const hUnit = totalMarginUnit / 3;
-
-    // 2. UPDATE TAMPILAN DASHBOARD
+    // 2. UPDATE TAMPILAN DASHBOARD (Hanya jika ID nya ditemukan)
     const elOps = document.getElementById('d-ops-total');
     if(elOps) {
         elOps.innerText = "RP " + totalOps.toLocaleString();
         
-        // Tampilan Margin 11K
-        const m5 = document.getElementById('res-m5');
-        if(m5) m5.innerText = "RP " + bruto11.toLocaleString();
-        const m5p = document.getElementById('res-m5-p');
-        if(m5p) m5p.innerText = "/ORG: RP " + Math.floor(h11).toLocaleString() + " (-10% KAS)";
+        document.getElementById('res-m5').innerText = "RP " + (tb*5000).toLocaleString();
+        document.getElementById('res-m5-p').innerText = "/ORG: RP " + Math.floor(h5).toLocaleString();
         
-        // Tampilan Margin 3K
-        const m7 = document.getElementById('res-m7');
-        if(m7) m7.innerText = "RP " + h3.toLocaleString();
-        const m7p = document.getElementById('res-m7-p');
-        if(m7p) m7p.innerText = "FULL 1 ORG: RP " + Math.floor(h3).toLocaleString();
+        document.getElementById('res-m7').innerText = "RP " + Math.max(0, (tb*7000) - totalOps).toLocaleString();
+        document.getElementById('res-m7-p').innerText = "/ORG: RP " + Math.max(0, Math.floor(h7)).toLocaleString() + " (-10%)";
         
-        // Tampilan Margin 1K
-        const m1 = document.getElementById('res-m1');
-        if(m1) m1.innerText = "RP " + Math.max(0, bruto1).toLocaleString();
-        const m1p = document.getElementById('res-m1-p');
-        if(m1p) m1p.innerText = "FULL 1 ORG: RP " + Math.floor(h1).toLocaleString();
+        document.getElementById('res-m1').innerText = "RP " + (tb*1000).toLocaleString();
+        document.getElementById('res-m1-p').innerText = "/ORG: RP " + Math.floor(h1).toLocaleString() + " (-10%)";
         
-        // Update Margin Unit (Hidden Dapur)
+        // Update Margin Unit (Pastikan Abang punya ID 'res-unit' & 'res-unit-p' di HTML)
         const elUnit = document.getElementById('res-unit');
         if(elUnit) {
             elUnit.innerText = "RP " + totalMarginUnit.toLocaleString();
-            document.getElementById('res-unit-p').innerText = "/ORG: RP " + Math.floor(hUnit).toLocaleString();
+            document.getElementById('res-unit-p').innerText = "/ORG: RP " + Math.floor(hUnit).toLocaleString() + " (-10%)";
         }
 
-        // TOTAL BERSIH
-        const hakTotal = document.getElementById('d-hak-total');
-        if(hakTotal) {
-            hakTotal.innerText = "RP " + Math.floor(h11 + h3 + h1 + hUnit).toLocaleString();
-        }
+        // TOTAL BERSIH YANG DITERIMA PER ORANG
+        document.getElementById('d-hak-total').innerText = "RP " + Math.floor(h5 + h7 + h1 + hUnit).toLocaleString();
     }
 }
 
- // --- GENERATE PDF BATCH 20 (VERSI FIX) ---
-window.generatePDF = async (tipe) => {
-    const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0);
-    if (dataSiap.length < 0) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // 1. AMBIL SETTINGS & OPERASIONAL
-    const snapOps = await get(ref(db, `bbs_operasional/${dbKey}`));
-    let totalOpsPDF = 0;
-    if(snapOps.val()) {
-        Object.values(snapOps.val()).forEach(o => { totalOpsPDF += Number(o.nom); });
-    }
-    
-    const totalM = dataSiap.reduce((sum, i) => sum + (Number(i.volM) || 0), 0);
-    const totalB = dataSiap.reduce((sum, i) => sum + (Number(i.volB) || 0), 0);
-    const selisihTotal = totalB - totalM;
-
-    doc.setFontSize(16); 
-    doc.text("PT. BERKAH BAJA STEEL", 105, 15, { align: "center" });
-
-    if(tipe === 'NAS') {
-        doc.setFontSize(10); 
-        doc.text("REKAP PENGIRIMAN BBS - NAS (BATCH 20)", 105, 22, { align: "center" });
-        
-        const body = dataSiap.map((i, index) => {
-            const rowLoss = i.volB - i.volM;
-            return [
-                index + 1, 
-                `${i.tgl} || ${i.jamB || '--:--'}`, 
-                hitungDurasi(i.jamM, i.jamB), 
-                i.plat, 
-                i.volM.toFixed(2), 
-                i.volB.toFixed(2), 
-                (rowLoss > 0 ? "+" : "") + rowLoss.toFixed(2)
-            ];
-        });
-
-        doc.autoTable({ 
-            head: [['NO', 'TGL | JAM BONGKAR', 'DURASI', 'PLAT', 'MUAT', 'BONGKAR', '+/-']], 
-            body, 
-            startY: 30, 
-            theme: 'grid',
-            styles: { fontSize: 7.5, halign: 'center' }
-        });
-
-        const finalY = doc.lastAutoTable.finalY + 10;
-        doc.setFont("helvetica", "bold");
-        doc.text(`TOTAL HARGA BELI MATERIAL : Rp. ${(dataSiap.length * 2200000).toLocaleString('id-ID')}`, 14, finalY);
-        doc.text(`TOTAL HARGA ONGKOS TRUCK : Rp. ${(dataSiap.length * 5500000).toLocaleString('id-ID')}`, 14, finalY + 7);
-        doc.setFont("helvetica", "normal");
-        doc.text(`TOTAL MUAT : ${totalM.toFixed(2)} M3`, 14, finalY + 14);
-        doc.text(`TOTAL BONGKAR : ${totalB.toFixed(2)} M3`, 14, finalY + 21);
-        
-        if(selisihTotal < 0) doc.setTextColor(255, 0, 0); 
-        else doc.setTextColor(0, 128, 0);
-        doc.text(`TOTAL SELISIH ( LOSS / LEBIH ) : ${(selisihTotal > 0 ? "+" : "") + selisihTotal.toFixed(2)} M3`, 14, finalY + 28);
-        doc.setTextColor(0, 0, 0); // Reset warna ke hitam
-
-    } else {
-        doc.setFontSize(10); 
-        doc.text("RINCIAN INTERNAL MARGIN (BATCH 20)", 105, 22, { align: "center" });
-
-        const potKas = 0.10; 
-        const totalMarginUnit = 100000 * dataSiap.length;
-        const bruto11 = totalB * 11000;
-        const hasil11 = Math.floor((bruto11 * (1 - potKas)) / 3);
-        const bruto3 = totalB * 3000;
-        const bruto1 = (totalB * 1000) - totalOpsPDF;
-        const hasil1 = Math.floor(Math.max(0, bruto1));
-        const hasilUnit = Math.floor(totalMarginUnit / 3);
-
-        const bodyMargin = [
-            ['MARGIN 11K', "RP " + bruto11.toLocaleString(), "BAGI 3 (-10%)", "RP " + hasil11.toLocaleString()],
-            ['MARGIN 3K', "RP " + bruto3.toLocaleString(), "FULL 1 ORG", "RP " + bruto3.toLocaleString()],
-            ['MARGIN 1K', "RP " + Math.max(0, bruto1).toLocaleString(), "FULL (-OPS)", "RP " + hasil1.toLocaleString()],
-            ['MARGIN UNIT', "RP " + totalMarginUnit.toLocaleString(), "BAGI 3", "RP " + hasilUnit.toLocaleString()]
-        ];
-
-        doc.autoTable({ 
-            head: [['KATEGORI', 'BRUTO', 'SISTEM', 'HASIL/ORANG']], 
-            body: bodyMargin, 
-            startY: 30,
-            theme: 'grid'
-        });
-
-        const fYM = doc.lastAutoTable.finalY + 10;
-        doc.setFont("helvetica", "bold");
-        doc.text(`TOTAL TERIMA PER ORANG : RP ${(hasil11 + bruto3 + hasil1 + hasilUnit).toLocaleString()}`, 15, fYM);
-        doc.text(`TOTAL KAS 10% (11K) : RP ${(bruto11 * 0.1).toLocaleString()}`, 15, fYM + 7);
-    }
-
-    // --- BAGIAN TANDA TANGAN (Sekarang sudah di dalam fungsi) ---
-    const signY = doc.internal.pageSize.height - 30;
-    doc.setTextColor(0,0,0);
-    doc.setFont("helvetica", "normal"); 
-    doc.text("Hormat Kami,", 160, signY - 15, { align: "center" });
-    doc.setFont("helvetica", "bold"); 
-    doc.text("YEFRY ZA.", 160, signY, { align: "center", underline: true });
-    doc.setFont("helvetica", "normal"); 
-    doc.text("MANAGER", 160, signY + 5, { align: "center" });
-
-    // Footer Otomatis
-    const skr = new Date();
-    const tglJam = `${skr.toLocaleDateString('id-ID')} | ${skr.toLocaleTimeString('id-ID')}`;
-    doc.setFontSize(8); 
-    doc.setFont("helvetica", "italic");
-    doc.setTextColor(150, 150, 150);
-    doc.text(`Laporan otomatis System Digital PT.BBS pada ${tglJam}`, 105, doc.internal.pageSize.height - 10, { align: "center" });
-
-    // SIMPAN PDF (Hanya satu kali)
-    doc.save(`BBS_${tipe}_BATCH20.pdf`);
-
-    // BAGIAN ARCHIVE
-    if (tipe === 'BBS' && confirm("Laporan Margin Berhasil! Bersihkan 20 data ini?")) {
-        const updates = {};
-        const snapshot = await get(ref(db, `bbs_logs/${dbKey}`));
-        const dbData = snapshot.val();
-        dataSiap.forEach(item => {
-            const key = Object.keys(dbData).find(k => dbData[k].plat === item.plat && dbData[k].tgl === item.tgl);
-            if (key) updates[`bbs_logs/${dbKey}/${key}/status`] = 'ARCHIVED';
-        });
-        await update(ref(db), updates);
-        alert("DASHBOARD BERSIH!"); 
-        location.reload();
-    }
-}; 
-
-// --- FUNGSI GEMBOK & ADMIN (PASTIKAN DI LUAR generatePDF) ---
-window.toggleMargin = () => { 
-    let pass = prompt("PASS?");
-    if(pass === "bbs-nas") { 
-        let a = document.getElementById('margin-area'); 
-        if(a) a.style.display = (a.style.display === 'block') ? 'none' : 'block'; 
-    } else {
-        alert("PASSWORD SALAH!");
+// --- FUNGSI MODAL & OPS (TIDAK BERUBAH AGAR STABIL) ---
+window.openOps = () => {
+    const m = document.getElementById('modal-ops');
+    if(m) m.style.display = 'block';
+};
+window.closeOps = () => {
+    const m = document.getElementById('modal-ops');
+    if(m) m.style.display = 'none';
+};
+window.addOps = async () => {
+    const k = document.getElementById('ops-ket').value;
+    const n = document.getElementById('ops-nom').value;
+    if(k && n) { 
+        await push(ref(db, `bbs_operasional/${dbKey}`), { ket: k, nom: Number(n) }); 
+        location.reload(); 
     }
 };
-
-window.openAdmin = () => { document.getElementById('modal-admin').style.display = 'block'; };
-window.closeAdmin = () => { document.getElementById('modal-admin').style.display = 'none'; };
-
-window.saveSettings = async () => {
-    await set(ref(db, `bbs_settings/${dbKey}`), { 
-        beli: Number(document.getElementById('cfg-beli').value), 
-        jual: Number(document.getElementById('cfg-jual').value) 
-    });
-    alert("SIMPAN BERHASIL!"); 
-    closeAdmin();
-};
-
-window.resetBBS = async () => { 
-    if(confirm("HAPUS SEMUA DATA?")) { 
-        await remove(ref(db, `bbs_logs/${dbKey}`)); 
-        await remove(ref(db, `bbs_operasional/${dbKey}`)); 
+window.delOps = async (id) => { 
+    if(confirm("HAPUS?")) { 
+        await remove(ref(db, `bbs_operasional/${dbKey}/${id}`)); 
         location.reload(); 
     } 
 };
+
+//=====================================================================================================================
+//=====================================================================================================================
+    // --- GENERATE PDF BATCH 20 ---
+    window.generatePDF = async (tipe) => {
+        const dataSiap = rawData.filter(i => i.status === 'DONE').slice(0);
+        if (dataSiap.length < 0) return alert(`DATA BELUM CUKUP! Baru ada ${dataSiap.length} data DONE.`);
+//=====================================================================================================================
+//=====================================================================================================================
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const s = await get(ref(db, `bbs_settings/${dbKey}`));
+        const cfg = s.val() || { beli: 0, jual: 0 };
+        
+        const totalM = dataSiap.reduce((sum, i) => sum + (Number(i.volM) || 0), 0);
+        const totalB = dataSiap.reduce((sum, i) => sum + (Number(i.volB) || 0), 0);
+        const selisihTotal = totalB - totalM;
+
+        doc.setFontSize(16); doc.text("PT. BERKAH BAJA STEEL", 105, 15, { align: "center" });
+
+        if(tipe === 'NAS') {
+    doc.setFontSize(10); doc.text("REKAP PENGIRIMAN BBS - NAS (BATCH 20)", 105, 22, { align: "center" });
+    
+    const body = dataSiap.map((i, index) => {
+        const rowLoss = i.volB - i.volM;
+        
+        // GABUNGKAN TANGGAL DAN JAM BONGKAR
+        // Format hasil: 10/4/2026 ‖ 21:30
+        const tglJamBongkar = `${i.tgl} || ${i.jamB || '--:--'}`; 
+
+        return [
+            index + 1, 
+            tglJamBongkar, // Kolom Tgl sekarang ada jamnya
+            hitungDurasi(i.jamM, i.jamB), 
+            i.plat, 
+            i.volM.toFixed(2), 
+            i.volB.toFixed(2), 
+            (rowLoss > 0 ? "+" : "") + rowLoss.toFixed(2)
+        ];
+    });
+
+    doc.autoTable({ 
+        head: [['NO', 'TGL | JAM BONGKAR', 'DURASI', 'PLAT MOBIL', 'MUAT', 'BONGKAR', '+/-']], 
+        body, 
+        startY: 30, 
+        theme: 'grid',
+        styles: { 
+            fontSize: 7.5, // Cimi kecilkan dikit biar kolom TGL gak sesak
+            halign: 'center', 
+            cellPadding: 1.5 
+        },
+        headStyles: { fillColor: [41, 128, 185], fontStyle: 'bold' },
+        
+        // --- INI KUNCI PRESISINYA ---
+        columnStyles: {
+            0: { cellWidth: 8 },   // NO
+            1: { cellWidth: 40 },  // TGL | JAM BONGKAR (Diciutkan)
+            2: { cellWidth: 32 },  // DURASI
+            3: { cellWidth: 28 },  // PLAT
+            4: { cellWidth: 18 },  // MUAT
+            5: { cellWidth: 18 },  // BONGKAR
+            6: { cellWidth: 18 }   // +/-
+        },
+        
+        didDrawCell: (data) => {
+            if (data.section === 'body' && data.column.index === 6) {
+                const val = data.cell.raw;
+                if (val.toString().includes('-')) { 
+                    doc.setTextColor(255, 0, 0); 
+                    doc.setFont("helvetica", "bold"); 
+                }
+                else if (val.toString().includes('+')) { 
+                    doc.setTextColor(0, 128, 0); 
+                    doc.setFont("helvetica", "bold");
+                }
+            }
+        }
+    });
+
+//=====================================================================================================================
+//=====================================================================================================================
+         
+            const hargaBeliUnit = 117700; // HARGA BELI MATERIAL
+            const totalHargaBeli = totalM * hargaBeliUnit;
+            
+            // --- TAMBAHAN: LOGIKA ONGKOS TRUCK ---
+            const hargaOngkosPerRit = 5000000; // Harga per rit (Rp 5.000.000)
+            const totalHargaOngkosTruck = hargaOngkosPerRit * dataSiap.length;
+//=====================================================================================================================
+//=====================================================================================================================
+
+
+            const finalY = doc.lastAutoTable.finalY + 10;
+            const xVal = 80; // Koordinat lurus untuk tanda (:)
+            
+            doc.setTextColor(0,0,0); 
+            doc.setFont("helvetica", "bold"); // Bold untuk harga-hargaan
+            
+            // Baris 1: Total Harga Beli
+            doc.text(`TOTAL HARGA BELI MATERIAL`, 14, finalY);
+            doc.text(`: Rp. ${totalHargaBeli.toLocaleString('id-ID')}`, xVal, finalY);
+
+            // Baris 2: Total Harga Ongkos Truck (BARU)
+            doc.text(`TOTAL HARGA ONGKOS TRUCK`, 14, finalY + 7);
+            doc.text(`: Rp. ${totalHargaOngkosTruck.toLocaleString('id-ID')}`, xVal, finalY + 7);
+
+            doc.setFont("helvetica", "normal"); // Kembali ke normal untuk rincian volume
+            
+            // Baris 3: Total Muat (Posisinya turun jadi +14)
+            doc.text(`TOTAL MUAT`, 14, finalY + 14);
+            doc.text(`: ${totalM.toFixed(2)} M3`, xVal, finalY + 14);
+            
+            // Baris 4: Total Bongkar (Posisinya turun jadi +21)
+            doc.text(`TOTAL BONGKAR`, 14, finalY + 21);
+            doc.text(`: ${totalB.toFixed(2)} M3`, xVal, finalY + 21);
+            
+            // Logika warna untuk selisih
+            if(selisihTotal < 0) doc.setTextColor(255, 0, 0); 
+            else if(selisihTotal > 0) doc.setTextColor(0, 128, 0);
+            
+            doc.setFont("helvetica", "bold");
+            
+            // Baris 5: Total Selisih (Posisinya turun jadi +28)
+            doc.text(`TOTAL SELISIH ( LOSS / LEBIH )`, 14, finalY + 28);
+            doc.text(`: ${(selisihTotal > 0 ? "+" : "") + selisihTotal.toFixed(2)} M3`, xVal, finalY + 28);
+            
+} else {
+    doc.setFontSize(10); 
+    doc.text("RINCIAN INTERNAL MARGIN (BATCH 20)", 105, 22, { align: "center" });
+
+//=====================================================================================================================
+//=====================================================================================================================    
+    // --- LOGIKA SETTING REVISI (SEMUA POTONG KAS 10%) ---
+    const potKas = 0.10; 
+    const marginUnitPerMobil = 300000; // (5.000.000 - 4.700.000)
+    const totalMarginUnit = marginUnitPerMobil * dataSiap.length;
+
+    // --- PERHITUNGAN BRUTO ---
+    const bruto5k = totalB * 5000;
+    const bruto7k = Math.max(0, (totalB * 7000) - totalOps);
+    const bruto1k = totalB * 1000;
+//=====================================================================================================================
+//=====================================================================================================================
+    // --- HITUNG TOTAL NOMINAL KAS (10% dari semua Bruto) ---
+    const totalKasNominal = (bruto5k + bruto7k + bruto1k + totalMarginUnit) * potKas;
+
+    // --- PERHITUNGAN HASIL PER ORANG ---
+    const hasil5k = Math.floor((bruto5k * (1 - potKas)) / 3);
+    const hasil7k = Math.floor((bruto7k * (1 - potKas)) / 4);
+    const hasil1k = Math.floor((bruto1k * (1 - potKas)) / 4);
+    const hasilUnit = Math.floor((totalMarginUnit * (1 - potKas)) / 4);
+
+//=====================================================================================================================
+//=====================================================================================================================    
+    const bodyMargin = [
+        ['MARGIN 5K', "RP " + bruto5k.toLocaleString(), "BAGI 3 (-10%)", "RP " + hasil5k.toLocaleString()],
+        ['MARGIN 7K', "RP " + bruto7k.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasil7k.toLocaleString()],
+        ['MARGIN 1K', "RP " + bruto1k.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasil1k.toLocaleString()],
+        ['MARGIN UNIT', "RP " + totalMarginUnit.toLocaleString(), "BAGI 4 (-10%)", "RP " + hasilUnit.toLocaleString()]
+    ];
+//=====================================================================================================================
+//=====================================================================================================================
+
+    doc.autoTable({ 
+        head: [['KATEGORI', 'TOTAL BRUTO', 'SISTEM', 'HASIL/ORANG']], 
+        body: bodyMargin, 
+        startY: 30,
+        theme: 'grid',
+        headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    const finalYMargin = doc.lastAutoTable.finalY + 10;
+    const totalTerimaBersih = hasil5k + hasil7k + hasil1k + hasilUnit;
+    
+    doc.setFont("helvetica", "bold");
+    
+    // 1. Baris Total Terima Per Orang
+    doc.text(`TOTAL TERIMA PER ORANG`, 15, finalYMargin);
+    doc.text(`: RP ${totalTerimaBersih.toLocaleString()}`, 80, finalYMargin);
+    
+    // 2. Baris TOTAL KAS (Pesanan Abang)
+    doc.text(`TOTAL KAS 10% BATCH INI`, 15, finalYMargin + 7);
+    doc.text(`: RP ${Math.floor(totalKasNominal).toLocaleString()}`, 80, finalYMargin + 7);
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(`TOTAL SELISIH BATCH INI`, 15, finalYMargin + 15);
+    doc.text(`: ${selisihTotal.toFixed(2)} M3`, 80, finalYMargin + 15);
+
+    doc.text(`TOTAL OPERASIONAL`, 15, finalYMargin + 22);
+    doc.text(`: RP ${totalOps.toLocaleString()}`, 80, finalYMargin + 22);
+}
+
+doc.setTextColor(0,0,0);
+const signY = doc.internal.pageSize.height - 30;
+
+        // Hormat Kami diletakkan 10 unit di atas nama
+        doc.setFont("helvetica", "normal"); 
+        doc.text("Hormat Kami,", 160, signY - 20, { align: "center" });
+
+        // Nama Manager
+        doc.setFont("helvetica", "bold"); 
+        doc.text("YEFRY ZA.", 160, signY, { align: "center", underline: true });
+
+        // Jabatan (Ditempelkan ke nama, hanya selisih 5)
+        doc.setFont("helvetica", "normal"); 
+        doc.text("MANAGER", 160, signY + 5, { align: "center" });
+
+         const sekarang = new Date();
+        const tgl = sekarang.toLocaleDateString('id-ID', { dateStyle: 'medium' });
+        const jam = sekarang.toLocaleTimeString('id-ID', { timeStyle: 'short' }).replace('.', ':');
+        
+        const tglJamPasti = `${tgl} | ${jam}`; 
+
+        doc.setFontSize(8); 
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(150, 150, 150); // Warna abu-abu biar elegan
+        doc.text(`Laporan ini dibuat secara otomatis melalui system Digital PT.BBS - Logistik pada ${tglJamPasti}`, 105, doc.internal.pageSize.height - 10, { align: "center" });
+
+        doc.save(`BBS_${tipe}_BATCH.pdf`);
+
+        if (tipe === 'BBS' && confirm("Laporan Margin Berhasil! Bersihkan 20 data ini dari dashboard?")) {
+            const updates = {};
+            const snapshot = await get(ref(db, `bbs_logs/${dbKey}`));
+            const dbData = snapshot.val();
+            dataSiap.forEach(item => {
+                const keyFirebase = Object.keys(dbData).find(k => dbData[k].plat === item.plat && dbData[k].tgl === item.tgl && dbData[k].volM === item.volM);
+                if (keyFirebase) updates[`bbs_logs/${dbKey}/${keyFirebase}/status`] = 'ARCHIVED';
+            });
+            await update(ref(db), updates);
+            alert("DASHBOARD BERSIH!"); location.reload();
+        }
+    };
+
+    window.toggleMargin = () => { if(prompt("PASS?") === "bbs-nas") { let a = document.getElementById('margin-area'); a.style.display = a.style.display==='block'?'none':'block'; } };
+    window.openAdmin = () => document.getElementById('modal-admin').style.display = 'block';
+    window.closeAdmin = () => document.getElementById('modal-admin').style.display = 'none';
+    window.saveSettings = async () => {
+        await set(ref(db, `bbs_settings/${dbKey}`), { beli: Number(document.getElementById('cfg-beli').value), jual: Number(document.getElementById('cfg-jual').value) });
+        alert("SIMPAN BERHASIL!"); closeAdmin();
+    };
+    window.resetBBS = async () => { if(confirm("HAPUS SEMUA DATA?")) { await remove(ref(db, `bbs_logs/${dbKey}`)); await remove(ref(db, `bbs_operasional/${dbKey}`)); location.reload(); } };
 
     document.getElementById('m-plat').addEventListener('input', function (e) {
         let v = e.target.value.toUpperCase().replace(/\s+/g, '');
@@ -809,41 +902,6 @@ function jalankanJam() {
 setInterval(jalankanJam, 1000);
 jalankanJam();
     
-// --- FUNGSI MODAL OPERASIONAL ---
-window.openOps = () => {
-    document.getElementById('modal-ops').style.display = 'block';
-};
-
-window.closeOps = () => {
-    document.getElementById('modal-ops').style.display = 'none';
-};
-
-window.addOps = async () => {
-    const ket = document.getElementById('ops-ket').value;
-    const nom = document.getElementById('ops-nom').value;
-
-    if(!ket || !nom) return alert("ISI SEMUA DATA!");
-
-    // Simpan ke Firebase
-    await push(ref(db, `bbs_operasional/${dbKey}`), {
-        ket: ket,
-        nom: Number(nom)
-    });
-
-    // Reset Input
-    document.getElementById('ops-ket').value = "";
-    document.getElementById('ops-nom').value = "";
-    
-    // Refresh hitungan di dashboard
-    location.reload(); 
-};
-
-window.delOps = async (key) => {
-    if(confirm("HAPUS BIAYA INI?")) {
-        await remove(ref(db, `bbs_operasional/${dbKey}/${key}`));
-        location.reload();
-    }
-};
 </script>
 <style> @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } </style>
 </body>
