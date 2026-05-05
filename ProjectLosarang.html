@@ -559,13 +559,13 @@ async function hitungUang(tb, jumlahMobil = 0) {
 //=====================================================================================================================
     // --- LOGIKA HITUNGAN UPGRADE ---
     const potKas = 0.10; // Potongan Kas 10%
-    const marginPerMobil = 300000; // Didapat dari (5.000.000 - 4.700.000)
+    const marginPerMobil = 0; // Didapat dari (5.000.000 - 4.700.000)
     const totalMarginUnit = marginPerMobil * jumlahMobil;
 
     // Perhitungan tiap bagian (Sesuai rumus baru)
-    const h5 = (tb * 5000) / 3; // Margin 5k bagi 3 murni
-    const h7 = (((tb * 7000) - totalOps) * (1 - potKas)) / 4; // Margin 7k potong OPS & KAS 10% bagi 4
-    const h1 = ((tb * 1000) * (1 - potKas)) / 4; // Margin 1k potong KAS 10% bagi 4
+    const h5 = (tb * 0) / 3; // Margin 5k bagi 3 murni
+    const h7 = (((tb * 0) - totalOps) * (1 - potKas)) / 4; // Margin 7k potong OPS & KAS 10% bagi 4
+    const h1 = ((tb * 0) * (1 - potKas)) / 4; // Margin 1k potong KAS 10% bagi 4
     const hUnit = (totalMarginUnit * (1 - potKas)) / 4; // Margin Unit potong KAS 10% bagi 4
 //=====================================================================================================================
 //=====================================================================================================================
@@ -575,13 +575,13 @@ async function hitungUang(tb, jumlahMobil = 0) {
     if(elOps) {
         elOps.innerText = "RP " + totalOps.toLocaleString();
         
-        document.getElementById('res-m5').innerText = "RP " + (tb*5000).toLocaleString();
+        document.getElementById('res-m5').innerText = "RP " + (tb*0).toLocaleString();
         document.getElementById('res-m5-p').innerText = "/ORG: RP " + Math.floor(h5).toLocaleString();
         
-        document.getElementById('res-m7').innerText = "RP " + Math.max(0, (tb*7000) - totalOps).toLocaleString();
+        document.getElementById('res-m7').innerText = "RP " + Math.max(0, (tb*0) - totalOps).toLocaleString();
         document.getElementById('res-m7-p').innerText = "/ORG: RP " + Math.max(0, Math.floor(h7)).toLocaleString() + " (-10%)";
         
-        document.getElementById('res-m1').innerText = "RP " + (tb*1000).toLocaleString();
+        document.getElementById('res-m1').innerText = "RP " + (tb*0).toLocaleString();
         document.getElementById('res-m1-p').innerText = "/ORG: RP " + Math.floor(h1).toLocaleString() + " (-10%)";
         
         // Update Margin Unit (Pastikan Abang punya ID 'res-unit' & 'res-unit-p' di HTML)
@@ -641,7 +641,7 @@ window.delOps = async (id) => {
         doc.setFontSize(16); doc.text("PT. BERKAH BAJA STEEL", 105, 15, { align: "center" });
 
         if(tipe === 'NAS') {
-    doc.setFontSize(10); doc.text("REKAP PENGIRIMAN BBS - NAS (BATCH 20)", 105, 22, { align: "center" });
+    doc.setFontSize(10); doc.text("REKAP PENGIRIMAN PT. BBS - PT. NAS ", 105, 22, { align: "center" });
     
     const body = dataSiap.map((i, index) => {
         const rowLoss = i.volB - i.volM;
@@ -702,11 +702,11 @@ window.delOps = async (id) => {
 //=====================================================================================================================
 //=====================================================================================================================
          
-            const hargaBeliUnit = 117700; // HARGA BELI MATERIAL
-            const totalHargaBeli = totalM * hargaBeliUnit;
+            const hargaBeliUnit = 3000000; // HARGA BELI MATERIAL
+            const totalHargaBeli = hargaBeliUnit * dataSiap.length;
             
             // --- TAMBAHAN: LOGIKA ONGKOS TRUCK ---
-            const hargaOngkosPerRit = 5000000; // Harga per rit (Rp 5.000.000)
+            const hargaOngkosPerRit = 5500000; // Harga per rit (Rp 5.000.000)
             const totalHargaOngkosTruck = hargaOngkosPerRit * dataSiap.length;
 //=====================================================================================================================
 //=====================================================================================================================
@@ -754,13 +754,13 @@ window.delOps = async (id) => {
 //=====================================================================================================================    
     // --- LOGIKA SETTING REVISI (SEMUA POTONG KAS 10%) ---
     const potKas = 0.10; 
-    const marginUnitPerMobil = 300000; // (5.000.000 - 4.700.000)
+    const marginUnitPerMobil = 0; // (5.000.000 - 4.700.000)
     const totalMarginUnit = marginUnitPerMobil * dataSiap.length;
 
     // --- PERHITUNGAN BRUTO ---
-    const bruto5k = totalB * 5000;
-    const bruto7k = Math.max(0, (totalB * 7000) - totalOps);
-    const bruto1k = totalB * 1000;
+    const bruto5k = totalB * 0;
+    const bruto7k = Math.max(0, (totalB * 0) - totalOps);
+    const bruto1k = totalB * 0;
 //=====================================================================================================================
 //=====================================================================================================================
     // --- HITUNG TOTAL NOMINAL KAS (10% dari semua Bruto) ---
