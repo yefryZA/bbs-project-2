@@ -3,28 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIEWER - SALDO KAS</title>
+    <title>VIEWER - KAS BERSAMA</title>
     <style>
-        :root { --dark: #276f59; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
+        :root { --dark: #155e08; --light-dark: #112240; --gold: #ffb400; --green: #2ecc71; --red: #e74c3c; --text: #ccd6f6; --slate: #8892b0; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; padding: 20px; display: flex; justify-content: center; }
         .container { width: 100%; max-width: 450px; }
+        
         .card-saldo { background: var(--light-dark); padding: 30px 20px; border-radius: 25px; text-align: center; border: 1px solid rgba(255, 180, 0, 0.2); margin-bottom: 25px; border-top: 5px solid var(--gold); }
+        
+        /* Area Rahasia BBS */
+        #admin-area { display: none; background: #1d3557; padding: 15px; border-radius: 15px; margin-bottom: 15px; border: 1px solid var(--green); text-align: center; }
+        
         .saldo-amount { font-size: 38px; font-weight: bold; color: var(--gold); margin: 10px 0; }
+        .saldo-admin { font-size: 28px; font-weight: bold; color: var(--green); }
+        
         .list-container { background: var(--light-dark); border-radius: 20px; padding: 15px; border: 1px solid #233554; }
         .item-kas { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #233554; }
         .item-ket { font-size: 13px; font-weight: bold; }
         .item-tgl { font-size: 10px; color: var(--slate); }
         .nom-in { color: var(--green); }
         .nom-out { color: var(--red); }
+        .admin-only { display: none; font-size: 9px; color: var(--green); margin-top: 4px; font-style: italic; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h2 style="text-align:center; color:var(--gold);">KEUANGAN BERSAMA</h2>
+    <h2 style="text-align:center; color:var(--gold);">MONITORING KAS</h2>
+
+    <div id="admin-area">
+        <div style="font-size: 10px; color: var(--green); font-weight: bold;">TOTAL SALDO ASLI (INTERNAL BBS)</div>
+        <div class="saldo-admin" id="total-bbs">RP 0</div>
+    </div>
+
     <div class="card-saldo">
         <div style="font-size: 12px; color: var(--slate);">SALDO SAAT INI</div>
-        <div class="saldo-amount" id="total-saldo">RP 0</div>
+        <div class="saldo-amount" id="total-rekanan">RP 0</div>
     </div>
+
     <div style="font-weight:bold; margin-bottom:10px; color:var(--gold);">RINCIAN TRANSAKSI</div>
     <div class="list-container" id="list-transaksi">
         <p style="text-align:center; color:var(--slate);">Memuat data...</p>
@@ -47,20 +62,48 @@
     const db = getDatabase(app);
     const pathKas = `SALDO_BERSAMA`;
 
+    // --- TRIK RAHASIA CIMI ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdmin = urlParams.get('mode') === 'admin'; // Cek apakah ada ?mode=admin
+
+    if(isAdmin) {
+        document.getElementById('admin-area').style.display = 'block';
+    }
+
     onValue(ref(db, pathKas), (snap) => {
-        let total = 0; let html = "";
+        let totalRekanan = 0; 
+        let totalBBS = 0; 
+        let html = "";
         const data = snap.val();
+
         if(data) {
             Object.values(data).reverse().forEach(item => {
                 const isIn = item.tipe === 'IN';
-                total += isIn ? item.nominal : -item.nominal;
-                html += `<div class="item-kas">
-                    <div><div class="item-ket">${item.keterangan}</div><div class="item-tgl">${item.tgl} | ${item.jam}</div></div>
-                    <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">${isIn?'+':'-'}${item.nominal.toLocaleString()}</div>
+                const nomRekanan = item.nominal_rekanan || item.nominal || 0;
+                const nomBBS = item.nominal_bbs || item.nominal || 0;
+
+                totalRekanan += isIn ? nomRekanan : -nomRekanan;
+                totalBBS += isIn ? nomBBS : -nomBBS;
+
+                html += `
+                <div class="item-kas">
+                    <div>
+                        <div class="item-ket">${item.keterangan}</div>
+                        <div class="item-tgl">${item.tgl} | ${item.jam}</div>
+                        ${isAdmin && item.margin_rahasia > 0 ? `<div style="color:var(--green); font-size:9px;">+ Profit: Rp ${item.margin_rahasia.toLocaleString()}</div>` : ''}
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">
+                            ${isIn?'+':'-'}${nomRekanan.toLocaleString()}
+                        </div>
+                        ${isAdmin ? `<div style="font-size:9px; color:var(--slate)">Asli: ${nomBBS.toLocaleString()}</div>` : ''}
+                    </div>
                 </div>`;
             });
         }
-        document.getElementById('total-saldo').innerText = "RP " + total.toLocaleString('id-ID');
+        
+        document.getElementById('total-rekanan').innerText = "RP " + totalRekanan.toLocaleString('id-ID');
+        document.getElementById('total-bbs').innerText = "RP " + totalBBS.toLocaleString('id-ID');
         document.getElementById('list-transaksi').innerHTML = html || "Belum ada riwayat";
     });
 </script>
