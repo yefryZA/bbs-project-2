@@ -822,11 +822,11 @@ const signY = doc.internal.pageSize.height - 30;
 
         // Nama Manager
         doc.setFont("helvetica", "bold"); 
-        doc.text("YEFRY ZA.", 160, signY, { align: "center", underline: true });
+        doc.text("H. HENDAR WAHBAGIONO", 160, signY, { align: "center", underline: true });
 
         // Jabatan (Ditempelkan ke nama, hanya selisih 5)
         doc.setFont("helvetica", "normal"); 
-        doc.text("MANAGER", 160, signY + 5, { align: "center" });
+        doc.text("DIREKTUR UTAMA", 160, signY + 5, { align: "center" });
 
          const sekarang = new Date();
         const tgl = sekarang.toLocaleDateString('id-ID', { dateStyle: 'medium' });
