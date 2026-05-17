@@ -72,6 +72,7 @@
     </div>
 </div>
 
+
 <div id="modal-kas" class="modal">
     <div class="modal-content">
         <h3 id="modal-title" style="color:#ffffff">INPUT DATA</h3> 
@@ -83,18 +84,20 @@
         <input type="text" id="kas-nom" placeholder="0" oninput="formatRupiah(this)" 
                style="font-size: 24px; font-weight: bold; color: #ffffff; height: 60px;">
 
-        <div id="area-margin" style="display:none; margin-top: 10px; border: 1px dashed var(--gold); padding: 10px; border-radius: 10px;">
-            <label style="font-size: 11px; color: var(--gold);">Potongan Margin BBS (Selisih Harga)</label>
-            <input type="text" id="kas-margin" placeholder="0" oninput="formatRupiah(this)" 
-                   style="font-size: 20px; font-weight: bold; color: var(--gold); height: 50px; background: transparent;">
-            <p style="font-size: 9px; color: var(--slate); margin: 0;">*Nominal ini akan mengurangi beban saldo di dashboard internal BBS.</p>
+        <div id="box-foto-nota" style="margin-top: 15px; text-align: left; display: none;">
+            <label style="font-size: 11px; font-weight: bold; display: block; margin-bottom: 5px; color: var(--slate);">
+                AMBIL FOTO NOTA FISIK:
+            </label>
+            <input type="file" id="kas-foto" accept="image/*" capture="environment" 
+                   style="font-size: 14px; width: 100%; padding: 8px; box-sizing: border-box; background: #333; color: #fff; border: 1px solid #555; border-radius: 4px;">
         </div>
-        
+
         <input type="hidden" id="kas-tipe">
-        <button class="btn bg-green" onclick="simpan()" style="margin-top: 15px;">SIMPAN DATA</button>
-        <button class="btn" onclick="closeModal()" style="color: black !important; background-color: #f1f1f1;">BATAL</button>
-    </div>
-</div>
+
+        <button class="btn bg-green" onclick="simpan()" style="margin-top: 20px; width: 100%;">SIMPAN DATA</button>
+        <button class="btn" onclick="closeModal()" style="margin-top: 8px; width: 100%; color: black !important; background-color: #f1f1f1;">BATAL</button>
+    </div> </div>
+
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.17.1/firebase-app.js";
@@ -119,21 +122,29 @@
         arrow.classList.toggle('rotate');
     }
 
+    // ─── PERBAIKAN FUNGSI OPEN MODAL CIMI (ANTI MACET) ───
     window.openModal = (t) => {
         document.getElementById('kas-tipe').value = t;
         document.getElementById('modal-title').innerText = t === 'IN' ? "TAMBAH SALDO" : "PENGELUARAN";
         
-        // Tampilkan area margin rahasia hanya jika OUT (Pengeluaran)
-        document.getElementById('area-margin').style.display = t === 'OUT' ? 'block' : 'none';
+        // Cari kotak foto nota yang kita pasang di HTML
+        const boxFoto = document.getElementById('box-foto-nota');
+        if (boxFoto) {
+            // Tampilkan kotak foto HANYA jika tipenya OUT (Pengeluaran)
+            boxFoto.style.display = t === 'OUT' ? 'block' : 'none';
+        }
         
         document.getElementById('modal-kas').style.display = 'block';
     }
 
+    // ─── PERBAIKAN FUNGSI CLOSE MODAL CIMI ───
     window.closeModal = () => {
         document.getElementById('modal-kas').style.display = 'none';
         document.getElementById('kas-ket').value = "";
         document.getElementById('kas-nom').value = "";
-        document.getElementById('kas-margin').value = "";
+        
+        const inputFoto = document.getElementById('kas-foto');
+        if (inputFoto) inputFoto.value = ""; // Bersihkan kolom foto saat modal ditutup
     }
 
     window.formatRupiah = (objek) => {
@@ -144,41 +155,122 @@
         let ribuan = split[0].substr(sisa).match(/\d{3}/gi);
         if (ribuan) {
             let separator = sisa ? "." : "";
-            rupiah += separator + ribuan.join(".");
+             rupiah += separator + ribuan.join(".");
         }
         rupiah = split[1] != undefined ? rupiah + "," + split[1] : rupiah;
         objek.value = rupiah;
     }
 
-    window.simpan = async () => {
-        const k = document.getElementById('kas-ket').value;
-        const nRaw = document.getElementById('kas-nom').value;
-        const mRaw = document.getElementById('kas-margin').value || "0";
-        const t = document.getElementById('kas-tipe').value;
-        
-        const nRekanan = Number(nRaw.replace(/\./g, ''));
-        const mBBS = Number(mRaw.replace(/\./g, ''));
-        
-        // nAsli adalah harga dasar (Rekanan - Margin)
-        const nAsliBBS = nRekanan - mBBS;
+// Fungsi kompresi andalan sukses milik PT. BBS
+async function compressAndGetBase64(file) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (e) => {
+            const img = new Image();
+            img.src = e.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max_size = 800;
+                if (width > height) {
+                    if (width > max_size) { height *= max_size / width; width = max_size; }
+                } else {
+                    if (height > max_size) { width *= max_size / height; height = max_size; }
+                }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                resolve(canvas.toDataURL("image/jpeg", 0.7).split(',')[1]);
+            };
+        };
+    });
+}
 
-        if(!k || !nRekanan) return alert("Isi Data Dulu Bang!");
-        
-        try {
-            await push(ref(db, pathKas), {
-                tgl: new Date().toLocaleDateString('id-ID'),
-                jam: new Date().toLocaleTimeString('id-ID'),
-                keterangan: k.toUpperCase(),
-                nominal: nRekanan,    // Tetap simpan ini untuk kompatibilitas lama
-                nominal_rekanan: nRekanan,
-                nominal_bbs: nAsliBBS, 
-                margin_rahasia: mBBS,
-                tipe: t,
-                ts: serverTimestamp()
-            });
-            alert("Tersimpan!"); closeModal();
-        } catch (e) { alert("Error: " + e.message); }
+window.simpan = async () => {
+    const k = document.getElementById('kas-ket').value;
+    const nRaw = document.getElementById('kas-nom').value;
+    const t = document.getElementById('kas-tipe').value;
+    
+    const fileInput = document.getElementById('kas-foto');
+    const fileFoto = fileInput ? fileInput.files[0] : null;
+    
+    const nRekanan = Number(nRaw.replace(/\./g, ''));
+
+    if(!k || !nRekanan) return alert("Isi Data Dulu Bang!");
+    
+    if (t === 'OUT' && !fileFoto) {
+        const yakin = confirm("Peringatan: Anda belum mengambil foto nota! Tetap mau simpan tanpa foto?");
+        if (!yakin) return; 
     }
+
+    const btnSimpan = document.querySelector("button[onclick='simpan()']");
+    const teksAsliBtn = btnSimpan ? btnSimpan.innerText : "SIMPAN DATA";
+
+    try {
+        if(btnSimpan) {
+            btnSimpan.innerText = "MENGIRIM FOTO KE DRIVE...";
+            btnSimpan.disabled = true;
+        }
+
+        let urlDriveOtomatis = "";
+
+        // PROSES KIRIM SESUAI JALUR SUKSES PROYEK 2
+        if (fileFoto) {
+            const base64Sut = await compressAndGetBase64(fileFoto);
+            const urlAppsScript = "https://script.google.com/macros/s/AKfycbxeqPf6aJMZ9B9YIdSD4YhFyG1Hn1CaRQWmnfSQEEaMVHQzuwWHs8c5PB46ESWU13_g/exec"; 
+            
+            // KUNCI UTAMA: Ditambahkan redirect follow agar kebal dari 'Failed to Fetch'
+            const response = await fetch(urlAppsScript, {
+                method: "POST",
+                mode: "cors",
+                redirect: "follow", 
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify({ 
+                    base64: base64Sut, 
+                    type: "image/jpeg", 
+                    name: `Nota_${Date.now()}_${k.replace(/\s+/g, '_')}.jpg` 
+                })
+            });
+            
+            const hasilDrive = await response.json();
+            
+            // SINKRON: Menggunakan properti .result sesuai Kode GS Proyek 2
+            if (hasilDrive.result === "success") {
+                urlDriveOtomatis = hasilDrive.url; 
+            } else {
+                throw new Error(hasilDrive.error || "Gagal upload");
+            }
+        }
+
+        // SIMPAN DATA SEKALIGUS LINK FOTO SPESIFIK KE FIREBASE
+        await push(ref(db, pathKas), {
+            tgl: new Date().toLocaleDateString('id-ID'),
+            jam: new Date().toLocaleTimeString('id-ID'),
+            keterangan: k.toUpperCase(),
+            nominal: nRekanan,
+            nominal_rekanan: nRekanan,
+            nominal_bbs: nRekanan,
+            margin_rahasia: 0,
+            tipe: t,
+            foto_nota: urlDriveOtomatis, 
+            ts: serverTimestamp()
+        });
+
+        if(btnSimpan) { btnSimpan.innerText = teksAsliBtn; btnSimpan.disabled = false; }
+        if(fileInput) fileInput.value = ""; 
+        
+        alert("Tersimpan & Foto Berhasil Masuk Google Drive!"); 
+        closeModal();
+
+    } catch (e) { 
+        alert("Gagal Kirim Foto: " + e.message);
+        if(btnSimpan) { btnSimpan.innerText = teksAsliBtn; btnSimpan.disabled = false; }
+    }
+}
 
     onValue(ref(db, pathKas), (snapshot) => {
         let html = "";
@@ -187,11 +279,21 @@
             Object.keys(data).reverse().forEach(key => {
                 const item = data[key];
                 const warna = item.tipe === 'IN' ? 'var(--green)' : 'var(--red)';
+                const nomTampil = item.nominal_rekanan || item.nominal || 0;
+
                 html += `
-                    <div class="item-koreksi">
+                    <div class="item-koreksi" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <div style="flex: 1;">
-                            <div style="font-weight: bold; font-size: 13px; color: ${warna}">${item.keterangan}</div>
-                            <div style="color: var(--slate); font-size: 10px;">${item.tgl} | Rp ${item.nominal.toLocaleString('id-ID')}</div>
+                            <div style="font-weight: bold; font-size: 13px; color: ${warna}; display: flex; align-items: center; gap: 8px;">
+                                ${item.keterangan}
+                                
+                                ${item.foto_nota ? `
+                                    <a href="${item.foto_nota}" target="_blank" title="Lihat Nota" style="text-decoration: none; font-size: 13px; cursor: pointer;">
+                                        📄 <span style="font-size: 10px; color: #34a853; font-weight: bold; vertical-align: middle;">Nota</span>
+                                    </a>
+                                ` : ''}
+                            </div>
+                            <div style="color: var(--slate); font-size: 10px;">${item.tgl} | Rp ${nomTampil.toLocaleString('id-ID')}</div>
                         </div>
                         <button class="btn-hapus" onclick="hapusData('${key}', '${item.keterangan}')">HAPUS</button>
                     </div>`;
@@ -207,48 +309,47 @@
     }
 
     window.generatePDF = async () => {
-    const snap = await get(ref(db, pathKas));
-    if(!snap.exists()) return alert("Data sudah kosong, Bang!");
-    
-    // Konfirmasi dulu biar gak sengaja kehapus
-    if(!confirm("Laporan akan dibuat dan DATA AKAN DI-RESET (DIHAPUS). Lanjut?")) return;
+        const snap = await get(ref(db, pathKas));
+        if(!snap.exists()) return alert("Data sudah kosong, Bang!");
+        
+        if(!confirm("Laporan akan dibuat dan DATA AKAN DI-RESET (DIHAPUS). Lanjut?")) return;
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
-    
-    let s = 0;
-    const body = Object.values(snap.val()).map((v, i) => {
-        s += v.tipe === 'IN' ? v.nominal : -v.nominal;
-        return [i+1, v.tgl, v.keterangan, v.tipe==='IN'?v.nominal.toLocaleString():'-', v.tipe==='OUT'?v.nominal.toLocaleString():'-', s.toLocaleString()];
-    });
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(16);
+        doc.text("LAPORAN KAS PT. BBS", 105, 15, { align: "center" });
+        
+        let s = 0;
+        const body = Object.values(snap.val()).map((v, i) => {
+            const nomSesuai = v.nominal_rekanan || v.nominal || 0;
+            s += v.tipe === 'IN' ? nomSesuai : -nomSesuai;
+            return [i+1, v.tgl, v.keterangan, v.tipe==='IN'?nomSesuai.toLocaleString():'-', v.tipe==='OUT'?nomSesuai.toLocaleString():'-', s.toLocaleString()];
+        });
 
-    doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
-    
-    const fY = doc.lastAutoTable.finalY + 20;
-    const pW = doc.internal.pageSize.getWidth();
-    const pH = doc.internal.pageSize.getHeight();
-    doc.text("Dibuat oleh,", pW-60, fY);
-    doc.setFont("helvetica", "bold");
-    doc.text("Yefry ZA.", pW-60, fY+25);
-    doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
-    doc.setFont("helvetica", "normal");
-    doc.text("Manager", pW-60, fY+31);
-    doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
-    doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
-    
-    // 1. Simpan PDF-nya dulu
-    doc.save(`Laporan_Kas_BBS.pdf`);
+        doc.autoTable({ head: [['NO', 'TGL', 'KET', 'IN', 'OUT', 'SALDO']], body, startY: 28, theme: 'grid' });
+        
+        const fY = doc.lastAutoTable.finalY + 20;
+        const pW = doc.internal.pageSize.getWidth();
+        const pH = doc.internal.pageSize.getHeight();
+        doc.text("Dibuat oleh,", pW-60, fY);
+        doc.setFont("helvetica", "bold");
+        doc.text("Yefry ZA.", pW-60, fY+25);
+        doc.line(pW-60, fY+26, pW-60+doc.getTextWidth("Yefry ZA."), fY+26);
+        doc.setFont("helvetica", "normal");
+        doc.text("Manager", pW-60, fY+31);
+        doc.setFontSize(8); doc.setTextColor(150); doc.setFont("helvetica", "italic");
+        doc.text("Laporan ini dibuat secara otomatis oleh system digital PT. BBS", pW/2, pH-10, {align:"center"});
+        
+        doc.save(`Laporan_Kas_BBS.pdf`);
 
-    // 2. PROSES RESET (Hapus data di Firebase)
-    try {
-        await remove(ref(db, pathKas));
-        alert("Laporan Berhasil di-download & Data Kas telah DI-RESET!");
-    } catch (e) {
-        alert("Gagal meriset data: " + e.message);
+        try {
+            await remove(ref(db, pathKas));
+            alert("Laporan Berhasil di-download & Data Kas telah DI-RESET!");
+        } catch (e) {
+            alert("Gagal meriset data: " + e.message);
+        }
     }
-}
+
 </script>
 </body>
 </html>
