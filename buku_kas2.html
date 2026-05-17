@@ -62,50 +62,52 @@
     const db = getDatabase(app);
     const pathKas = `SALDO_BERSAMA`;
 
-    // --- TRIK RAHASIA CIMI ---
-    const urlParams = new URLSearchParams(window.location.search);
-    const isAdmin = urlParams.get('mode') === 'admin'; // Cek apakah ada ?mode=admin
-
-    if(isAdmin) {
-        document.getElementById('admin-area').style.display = 'block';
-    }
-
     onValue(ref(db, pathKas), (snap) => {
-        let totalRekanan = 0; 
-        let totalBBS = 0; 
-        let html = "";
-        const data = snap.val();
+    let totalRekanan = 0; 
+    let html = "";
+    const data = snap.val();
 
-        if(data) {
-            Object.values(data).reverse().forEach(item => {
-                const isIn = item.tipe === 'IN';
-                const nomRekanan = item.nominal_rekanan || item.nominal || 0;
-                const nomBBS = item.nominal_bbs || item.nominal || 0;
+    if(data) {
+        Object.values(data).reverse().forEach(item => {
+            const isIn = item.tipe === 'IN';
+            const nomRekanan = item.nominal_rekanan || item.nominal || 0;
 
-                totalRekanan += isIn ? nomRekanan : -nomRekanan;
-                totalBBS += isIn ? nomBBS : -nomBBS;
+            totalRekanan += isIn ? nomRekanan : -nomRekanan;
 
-                html += `
-                <div class="item-kas">
-                    <div>
-                        <div class="item-ket">${item.keterangan}</div>
-                        <div class="item-tgl">${item.tgl} | ${item.jam}</div>
-                        ${isAdmin && item.margin_rahasia > 0 ? `<div style="color:var(--green); font-size:9px;">+ Profit: Rp ${item.margin_rahasia.toLocaleString()}</div>` : ''}
+            // FITUR UTAMA: Logika tombol ikon foto nota otomatis
+            let tombolNotaHtml = "";
+            if (!isIn && item.foto_nota) {
+                tombolNotaHtml = `
+                    <a href="${item.foto_nota}" target="_blank" 
+                       style="display: inline-block; background-color: #34a853; color: white !important; font-size: 10px; font-weight: bold; text-decoration: none; padding: 2px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle;">
+                       📄 Nota
+                    </a>
+                `;
+            }
+
+            html += `
+            <div class="item-kas" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333;">
+                <div>
+                    <div class="item-ket" style="font-weight: bold;">
+                        ${item.keterangan} ${tombolNotaHtml}
                     </div>
-                    <div style="text-align:right">
-                        <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">
-                            ${isIn?'+':'-'}${nomRekanan.toLocaleString()}
-                        </div>
-                        ${isAdmin ? `<div style="font-size:9px; color:var(--slate)">Asli: ${nomBBS.toLocaleString()}</div>` : ''}
+                    <div class="item-tgl" style="font-size: 11px; color: var(--slate); margin-top: 4px;">
+                        ${item.tgl} | ${item.jam}
                     </div>
-                </div>`;
-            });
-        }
-        
-        document.getElementById('total-rekanan').innerText = "RP " + totalRekanan.toLocaleString('id-ID');
-        document.getElementById('total-bbs').innerText = "RP " + totalBBS.toLocaleString('id-ID');
-        document.getElementById('list-transaksi').innerHTML = html || "Belum ada riwayat";
-    });
+                </div>
+                <div style="text-align:right">
+                    <div style="font-weight:bold" class="${isIn?'nom-in':'nom-out'}">
+                        ${isIn?'+':'-'}${nomRekanan.toLocaleString('id-ID')}
+                    </div>
+                </div>
+            </div>`;
+        });
+    }
+    
+    // Tampilkan total saldo murni rekanan dan daftar transaksinya
+    document.getElementById('total-rekanan').innerText = "RP " + totalRekanan.toLocaleString('id-ID');
+    document.getElementById('list-transaksi').innerHTML = html || "<p style='text-align:center; color:var(--slate); padding:20px;'>Belum ada riwayat transaksi</p>";
+});
 </script>
 </body>
 </html>
