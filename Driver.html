@@ -85,7 +85,6 @@ input::placeholder {
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    // 🎯 SEKARANG KITA TAMBAHKAN 'get' UNTUK MENGAMBIL DATA PIN DARI DATABASE
     import { getDatabase, ref, set, update, get } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
     // Konfigurasi Firebase PT. BBS
@@ -101,13 +100,38 @@ input::placeholder {
 
     let gpsInterval = null;
     let currentIdTransaksi = "";
+    let wakeLock = null;
 
-    // Register Service Worker supaya Web App bisa diinstal di layar HP (PWA Standar)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('data:text/javascript,console.log("PWA Active")');
+    // 🔒 FUNGSI AWAL: Memaksa sistem HP tetap melek biar GPS tidak tidur
+    async function requestWakeLock() {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                console.log('🔒 HP Dipaksa Melek, GPS Anti-Mati!');
+            }
+        } catch (err) {
+            console.error('❌ Gagal mengunci sistem melek:', err);
+        }
     }
 
-    // Cek status lokal (Biar kalau Chrome ketutup, pas dibuka langsung mengunci lagi)
+    // Jalankan sistem anti-tidur saat halaman dimuat atau dibuka kembali
+    window.addEventListener('load', requestWakeLock);
+    document.addEventListener('visibilitychange', () => {
+        if (wakeLock !== null && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    });
+
+    // 🚀 DAFTARKAN SERVICE WORKER FISIK (Hanya yang asli sw.js agar anti-blokir Chrome)
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js', { scope: './' })
+                .then((reg) => console.log('🚀 PWA Driver Resmi Aktif!', reg))
+                .catch((err) => console.error('❌ Eror PWA Driver:', err));
+        });
+    }
+
+    // Cek status lokal saat aplikasi dibuka (Kunci Anti Amnesia)
     window.onload = function() {
         const savedId = localStorage.getItem('bbs_active_id');
         const savedPlat = localStorage.getItem('bbs_active_plat');
@@ -125,7 +149,7 @@ input::placeholder {
         }
     }
 
-    // FUNGSI: MULAI PERJALANAN (VERSI FIX KUNCI ANTI AMNESIA)
+    // FUNGSI: MULAI PERJALANAN 
     window.mulaiTracking = async function() {
         const plat = document.getElementById('plat').value.trim().toUpperCase();
         const sopir = document.getElementById('sopir').value.trim();
@@ -140,19 +164,15 @@ input::placeholder {
             return;
         }
 
-        // Generate ID perjalanan unik berdasarkan waktu
         currentIdTransaksi = "TRACK-" + Date.now();
 
-        // 🎯 FIX DI SINI: Simpan ke localStorage dengan nama key yang BENAR dan SAMA dengan yang dicek saat window.onload
         localStorage.setItem('bbs_active_id', currentIdTransaksi);
         localStorage.setItem('bbs_active_plat', plat);
         localStorage.setItem('bbs_active_sopir', sopir);
 
-        // Ubah tampilan web, langsung sembunyikan form input
         document.getElementById('form-area').style.display = 'none';
         document.getElementById('lock-area').style.display = 'block';
 
-        // Tembak data awal armada ke Firebase
         await set(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
             id_track: currentIdTransaksi,
             plat_nomor: plat,
@@ -163,52 +183,49 @@ input::placeholder {
             lng: 0
         });
 
-        // Hidupkan radar GPS agresif
         aktifkanMesinGPS();
     }
 
-   // FUNGSI: ENGINE PENYALUR GPS BERKALA (VERSI SILUMAN - TANPA TEXT DI LAYAR HP)
+    // FUNGSI: RADAR UTAMA GPS (Sudah tersisip jembatan ke Service Worker latar belakang)
     function aktifkanMesinGPS() {
-    if (!navigator.geolocation) {
-        return;
-    }
-
-    // Pemicu otomatis biar HP sopir gak berani tidur saat GPS aktif
-    if (typeof requestWakeLock === 'function') {
-        requestWakeLock();
-    }
-
-    gpsInterval = navigator.geolocation.watchPosition(async (position) => {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-
-        // 🚀 1. KODINGAN ASLI ABANG (Tetap jalan saat aplikasi terbuka)
-        await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
-            lat: latitude,
-            lng: longitude,
-            waktu_update: new Date().toISOString()
-        });
-
-        // 📡 2. JEMBATAN EMAS (Selipkan data ke Service Worker agar tetap kirim saat aplikasi ditutup)
-        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({
-                type: 'TRACK_GPS_BACKGROUND',
-                latitude: latitude,
-                longitude: longitude,
-                dbPath: `bbs_tracking/${dbKey}/${currentIdTransaksi}` // Kirim alamat jalurnya ke SW
-            });
+        if (!navigator.geolocation) {
+            return;
         }
 
-    }, (error) => {
-        console.error("Error GPS:", error);
-    }, {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0
-    });
-}
+        // Panggil paksa sistem melek
+        requestWakeLock();
+
+        gpsInterval = navigator.geolocation.watchPosition(async (position) => {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            // 1. Kiriman Utama (Saat aplikasi dibuka melek)
+            await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
+                lat: latitude,
+                lng: longitude,
+                waktu_update: new Date().toISOString()
+            });
+
+            // 2. JEMBATAN SILUMAN (Melempar koordinat asli ke sw.js saat HP dimasukkan kantong)
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'TRACK_GPS_BACKGROUND',
+                    latitude: latitude,
+                    longitude: longitude,
+                    dbPath: `bbs_tracking/${dbKey}/${currentIdTransaksi}`
+                });
+            }
+
+        }, (error) => {
+            console.error("Error GPS:", error);
+        }, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+        });
+    }
     
-    // FUNGSI: MATIKAN TRACKING (OTOMATIS CEK PIN REALTIME DARI DASHBOARD)
+    // FUNGSI: TOMBOL SELESAI (Kunci Bongkar via PIN Dashboard)
     window.stopTracking = async function() {
         const inputPin = document.getElementById('pin-input').value.trim();
 
@@ -218,22 +235,19 @@ input::placeholder {
         }
 
         try {
-            // 🎯 AMBIL PIN AKTIF YANG SUDAH ABANG SET DI DASHBOARD
-            // Kita arahkan ke node baru di Firebase khusus menyimpan konfigurasi proyek: bbs_config/BBS_PROYEK_SATOE/pin_bongkar
             const snapshot = await get(ref(db, `bbs_config/${dbKey}/pin_bongkar`));
-            
-            // Jaga-jaga kalau di dashboard belum diset, default-nya kita buat "2026"
             const pinSistem = snapshot.exists() ? snapshot.val().toString().trim() : "2026";
 
-            // Validasi kecocokan PIN input dengan PIN dari Dashboard
             if (inputPin !== pinSistem) {
                 alert("❌ PIN SALAH! Koordinat Anda tetap dipantau. Silakan minta PIN ke Petugas Pos Bongkar.");
                 document.getElementById('pin-input').value = "";
                 return;
             }
 
-            // Jika PIN benar, matikan pelacakan
-            clearInterval(gpsInterval);
+            // Hentikan radar GPS internal
+            if (gpsInterval) {
+                navigator.geolocation.clearWatch(gpsInterval);
+            }
 
             await update(ref(db, `bbs_tracking/${dbKey}/${currentIdTransaksi}`), {
                 status_perjalanan: "SELESAI_BONGKAR",
@@ -250,37 +264,6 @@ input::placeholder {
             alert("❌ KONEKSI ERROR: Gagal memvalidasi PIN ke server. Coba lagi!");
         }
     }
-// 🎯 KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js', { scope: './' })
-            .then((reg) => console.log('🚀 PWA Driver Resmi Aktif!', reg))
-            .catch((err) => console.error('❌ Eror PWA Driver:', err));
-    });
-}
-
-    let wakeLock = null;
-
-// Fungsi memaksa layar/sistem HP tetap melek
-async function requestWakeLock() {
-    try {
-        if ('wakeLock' in navigator) {
-            wakeLock = await navigator.wakeLock.request('screen');
-            console.log('🔒 HP Dipaksa Melek, GPS Anti-Mati!');
-        }
-    } catch (err) {
-        console.error('❌ Gagal mengunci sistem melek:', err);
-    }
-}
-
-// Jalankan saat halaman dibuka
-window.addEventListener('load', requestWakeLock);
-document.addEventListener('visibilitychange', () => {
-    if (wakeLock !== null && document.visibilityState === 'visible') {
-        requestWakeLock();
-    }
-});
 </script>
-
 </body>
 </html>
