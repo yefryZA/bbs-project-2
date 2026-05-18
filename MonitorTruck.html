@@ -332,15 +332,11 @@ if (data.lat && data.lng) {
             document.getElementById('stat-selesai').innerText = selesai;
         }
 
-        // 🎯 KODE BIAR DASHBOARD BISA DIDOWNLOAD DI LAPTOP
+// 🎯 KODE RESMI PEMANGGIL SERVICE WORKER FISIK (ANTI-BLOKIR CHROME)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        const swCode = `self.addEventListener('fetch', function(event) {});`;
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        
-        navigator.serviceWorker.register(swUrl, { scope: './' })
-            .then((reg) => console.log('🚀 PWA Dashboard Aktif!', reg))
+        navigator.serviceWorker.register('sw.js', { scope: './' })
+            .then((reg) => console.log('🚀 PWA Dashboard Resmi Aktif!', reg))
             .catch((err) => console.error('❌ Eror PWA Dashboard:', err));
     });
 }
